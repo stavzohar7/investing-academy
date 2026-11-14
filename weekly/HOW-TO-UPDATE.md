@@ -55,3 +55,7 @@ The app (`weekly.js`) renders it at `#weekly`. All text shown to the user is in 
    DCF-modelled tickers, the scorecard has a `benchmarkAt` entry for every analysis date, and the new mark exists.
 8. Only these files may change: the new `weekly/YYYY-MM-DD.js`, `weekly/manifest.js`, `weekly/scorecard.js`.
    Do not modify any other project files.
+9. **Publish**: the site is live on GitHub Pages (https://stavzohar7.github.io/investing-academy/), served from the
+   `main` branch of this git repository. After validation passes, run from the project folder:
+   `git add weekly/ && git commit -m "Weekly report <date>" && git push`
+   If the push fails (e.g. not signed in), do not retry in a loop — report it in the summary.
