@@ -1,0 +1,21 @@
+{
+  "name": "אקדמיית המשקיע — מאפס ועד באפט",
+  "short_name": "אקדמיית המשקיע",
+  "description": "ללמוד להשקיע במניות מאפס — לטווח ארוך ולסווינג — בדרך של באפט, מאנגר ולינץ'.",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./index.html#home",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "אימון יומי", "url": "./index.html#practice" },
+    { "name": "הניתוח השבועי", "url": "./index.html#weekly" },
+    { "name": "מסלול הלימוד", "url": "./index.html#path" }
+  ]
+}

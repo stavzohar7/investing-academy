@@ -1,0 +1,32 @@
+// Service Worker — מאפשר להתקין את האפליקציה ולהשתמש בה גם בלי אינטרנט.
+// אסטרטגיה: "רשת קודם" — כשיש אינטרנט תמיד מקבלים את הגרסה העדכנית (כולל דוחות שבועיים חדשים),
+// וכשאין — מגישים את העותק השמור.
+const CACHE = "investing-academy-v3";
+const CORE = [
+  "./", "index.html", "styles.css", "manifest.webmanifest", "icon.svg",
+  "content.js", "content2.js", "content3.js", "content4.js", "content5.js", "content6.js",
+  "content7.js", "content8.js", "content9.js", "content10.js", "content11.js", "content12.js",
+  "glossary.js", "app.js", "tools.js", "weekly.js", "library.js", "practice.js", "extras.js", "lab.js", "hub.js", "play.js", "course.js",
+  "weekly/manifest.js", "weekly/scorecard.js"
+];
+
+self.addEventListener("install", e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener("activate", e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+});
+
+self.addEventListener("fetch", e => {
+  if (e.request.method !== "GET") return;
+  e.respondWith(
+    fetch(e.request).then(res => {
+      if (res && (res.ok || res.type === "opaque")) {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+      }
+      return res;
+    }).catch(() => caches.match(e.request).then(r => r || (e.request.mode === "navigate" ? caches.match("index.html") : undefined)))
+  );
+});
