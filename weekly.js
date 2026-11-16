@@ -35,7 +35,7 @@ function valueBar(sc, price) {
   <p class="small center">המחיר הנוכחי ${isFinite(gap) ? (gap >= 0 ? `<b class="bad">גבוה ב-${pct(gap, 0)}</b> מ` : `<b class="good">נמוך ב-${pct(-gap, 0)}</b> מ`) : "לעומת "}שווי תרחיש הבסיס שלנו</p>`;
 }
 
-function stockCard(s, rep, open) {
+function stockCard(s, rep, open, repId) {
   const preset = rep.dcf && rep.dcf[s.ticker];
   return `
   <article class="stock card" id="stk-${s.ticker}" aria-labelledby="h-${s.ticker}">
@@ -70,7 +70,7 @@ function stockCard(s, rep, open) {
         </section>
         <section class="opinion"><h4>🧠 חוות הדעת — בראש של באפט</h4><p>${s.verdict.text}</p></section>
         <section><h4>🔭 על מה לעקוב ומה צפוי</h4><ul>${s.future.map(x => `<li>${x}</li>`).join("")}</ul></section>
-        <section class="swingbox"><h4>⚡ זווית הסווינג</h4><p>${s.swing}</p></section>
+        ${rep.technical && rep.technical.stocks[s.ticker] ? `<p class="small">📉 <a href="#weekly/${repId}/technical/${s.ticker}">הניתוח הטכני של ${s.ticker}</a> · 🧩 <a href="#weekly/${repId}/combined">השילוב בין שתי העדשות</a></p>` : ""}
         <section><h4>🎓 השיעורים שהניתוח הזה מתרגל</h4>
           <ul class="learn-links">${s.learn.map(id => `<li><a href="#lesson/${id}">${esc(lessonTitle(id))}</a></li>`).join("")}</ul>
         </section>
@@ -141,16 +141,52 @@ function renderScorecard() {
       </article>`).join("")}`;
 }
 
-Routes.weekly = function (id, ticker) {
+function fundamentalTab(rep, id, ticker) {
+  return `
+    <p class="muted">הלשונית הזו עוסקת ב<b>עסק</b>: מה הוא שווה, ומה המחיר כבר מניח. לתזמון, מגמה וסיכון — ראה את <a href="#weekly/${id}/technical">הלשונית הטכנית</a>.</p>
+    ${rep.sections.map(sec => `
+      <section class="mb" aria-labelledby="sec-${sec.id}">
+        <h2 id="sec-${sec.id}">${sec.title}</h2>
+        <p class="muted">${sec.subtitle}</p>
+        <div class="card mb" style="overflow-x:auto">
+          <table class="data">
+            <caption class="sr-only">סיכום ${sec.title}</caption>
+            <tr><th scope="col">מניה</th><th scope="col">מחיר (12.11)</th><th scope="col">שווי בסיס (שלנו)</th><th scope="col">הערכה</th></tr>
+            ${sec.stocks.map(s => `<tr>
+              <td><a href="#weekly/${id}/fundamental/${s.ticker}"><b lang="en">${s.ticker}</b> ${esc(s.he)}</a></td>
+              <td dir="ltr" style="text-align:right">$${s.price.toFixed(2)}</td>
+              <td dir="ltr" style="text-align:right">$${s.valuation.scenarios.base}</td>
+              <td><span class="${TONE[s.verdict.tone]}">${TONE_ICON[s.verdict.tone]} ${s.verdict.label}</span></td>
+            </tr>`).join("")}
+          </table>
+        </div>
+        ${sec.stocks.map(s => stockCard(s, rep, s.ticker === ticker, id)).join("")}
+      </section>`).join("")}
+    <section class="card mb" aria-labelledby="mtTitle">
+      <h2 id="mtTitle">🧭 איך לקרוא את הניתוח הפונדמנטלי</h2>
+      <ul>
+        <li><b>שלושה תרחישים</b> — במקום "מחיר יעד" אחד. שווי הוא טווח, לא נקודה (שיעור DCF).</li>
+        <li><b>Reverse DCF</b> — מה המחיר הנוכחי כבר מניח. זו לרוב השאלה החשובה ביותר.</li>
+        <li><b>חוות הדעת</b> — איך משקיע בסגנון באפט היה שוקל את העסק, ההנהלה, החפיר והמחיר. תרגיל חשיבה, לא הוראה לפעולה.</li>
+        <li><b>הכי חשוב:</b> פתח את ההנחות במחשבון, שנה אותן, ותגיע למסקנה <b>שלך</b>.</li>
+      </ul>
+    </section>`;
+}
+
+Routes.weekly = function (id, a, b) {
   if (id === "scorecard") return renderScorecard();
   const list = window.WEEKLY_MANIFEST || [];
   if (!list.length) { app().innerHTML = `<h1>📰 הניתוח השבועי</h1><p class="muted">עדיין אין דוחות.</p>`; return; }
   id = list.includes(id) ? id : list[0];
+  let tab = "overview", ticker = null;
+  if (a && WEEK_TABS.some(t => t[0] === a)) { tab = a; ticker = b || null; } else if (a) { tab = "fundamental"; ticker = a; }
   app().innerHTML = `<h1>📰 הניתוח השבועי</h1><p class="muted">טוען את הדוח...</p>`;
   loadWeekly(id, rep => {
     if (!rep) { app().innerHTML = `<h1>📰 הניתוח השבועי</h1><p class="bad">לא הצלחנו לטעון את הדוח ${esc(id)}.</p>`; return; }
-    document.title = `${rep.title} — הניתוח השבועי`;
-    const m = rep.market;
+    const tabName = WEEK_TABS.find(t => t[0] === tab)[1];
+    document.title = `${tabName} · ${rep.title} — הניתוח השבועי`;
+    const body = tab === "fundamental" ? fundamentalTab(rep, id, ticker) : tab === "technical" ? techTab(rep, id) : tab === "combined" ? combinedTab(rep, id) : overviewTab(rep, id);
+    const srcs = [...rep.sources, ...((rep.technical && rep.technical.sources) || [])];
     app().innerHTML = `
     <div class="row">
       <h1 style="margin:0">📰 הניתוח השבועי</h1><span class="spacer"></span>
@@ -159,75 +195,33 @@ Routes.weekly = function (id, ticker) {
         <select id="weekSel">${list.map(w => `<option value="${w}" ${w === id ? "selected" : ""}>${w === list[0] ? "האחרון · " : ""}${w.split("-").reverse().join(".")}</option>`).join("")}</select></div>
     </div>
     <p class="muted"><b>${rep.title}</b> · ${rep.asOf}</p>
+    <nav class="tabs weektabs" aria-label="סוג ניתוח">${WEEK_TABS.map(t => `<a href="#weekly/${id}/${t[0]}" ${t[0] === tab ? 'aria-current="page"' : ""} title="${t[2]}">${t[1]}</a>`).join("")}</nav>
 
     <div class="disclaimer" role="note">
-      <b>⚠️ חשוב לקרוא:</b> זהו <b>ניתוח לימודי</b> שמדגים איך משקיעים בסגנון באפט, מאנגר ולינץ' חושבים על חברות — <b>לא המלצה לקנות, למכור או להחזיק</b> אף נייר ערך, ולא ייעוץ השקעות המותאם אישית.
+      <b>⚠️ חשוב לקרוא:</b> זהו <b>ניתוח לימודי</b> שמדגים איך משקיעים בסגנון באפט, מאנגר ולינץ' חושבים על חברות, ואיך קוראים גרף — <b>לא המלצה לקנות, למכור או להחזיק</b> אף נייר ערך, ולא ייעוץ השקעות המותאם אישית.
       ערכי השווי נובעים מהנחות שלנו שיכולות להיות שגויות לגמרי, והתרחישים אינם תחזית. מחירים משתנים כל יום — בדוק נתונים עדכניים לפני כל החלטה.
     </div>
 
-    <section class="card mb" aria-labelledby="mkTitle">
-      <h2 id="mkTitle">🌡️ מצב השוק השבוע</h2>
-      <div class="thermo" role="img" aria-label="טמפרטורת השוק: ${m.temperature} מתוך 100 — ${esc(m.tempLabel)}">
-        <div class="thermo-bar"><div class="thermo-pin" style="right:${m.temperature}%"></div></div>
-        <div class="row small muted"><span>🧊 קר — פחד, הזדמנויות</span><span class="spacer"></span><span>🔥 חם — אופוריה, זהירות</span></div>
-        <p class="center"><b>${esc(m.tempLabel)}</b></p>
-      </div>
-      <div class="lesson-body">${m.summary}</div>
-      <div class="kv">${m.indicators.map(i => `<div><div class="k">${i[0]}</div><div class="v ${TONE[i[2]]}">${i[1]}</div><div class="small muted">${i[3]}</div></div>`).join("")}</div>
-    </section>
+    ${body}
 
-    <section class="card mb insight" aria-labelledby="inTitle">
-      <h2 id="inTitle">💡 ${rep.insight.title}</h2>
-      <div class="lesson-body">${rep.insight.body}</div>
-      <p class="small">שיעורים קשורים: ${rep.insight.lessons.map(l => `<a href="#lesson/${l}">${esc(lessonTitle(l))}</a>`).join(" · ")}</p>
-    </section>
-
-    ${rep.sections.map(sec => `
-      <section class="mb" aria-labelledby="sec-${sec.id}">
-        <h2 id="sec-${sec.id}">${sec.title}</h2>
-        <p class="muted">${sec.subtitle}</p>
-        <div class="card mb" style="overflow-x:auto">
-          <table class="data">
-            <caption class="sr-only">סיכום ${sec.title}</caption>
-            <tr><th scope="col">מניה</th><th scope="col">מחיר</th><th scope="col">שווי בסיס (שלנו)</th><th scope="col">הערכה</th></tr>
-            ${sec.stocks.map(s => `<tr>
-              <td><a href="#weekly/${id}/${s.ticker}"><b lang="en">${s.ticker}</b> ${esc(s.he)}</a></td>
-              <td dir="ltr" style="text-align:right">$${s.price.toFixed(2)}</td>
-              <td dir="ltr" style="text-align:right">$${s.valuation.scenarios.base}</td>
-              <td><span class="${TONE[s.verdict.tone]}">${TONE_ICON[s.verdict.tone]} ${s.verdict.label}</span></td>
-            </tr>`).join("")}
-          </table>
-        </div>
-        ${sec.stocks.map(s => stockCard(s, rep, s.ticker === ticker)).join("")}
-      </section>`).join("")}
-
-    <section class="card mb" aria-labelledby="mtTitle">
-      <h2 id="mtTitle">🧭 איך לקרוא את הניתוחים</h2>
-      <ul>
-        <li><b>שלושה תרחישים</b> — במקום "מחיר יעד" אחד. שווי הוא טווח, לא נקודה (שיעור DCF).</li>
-        <li><b>Reverse DCF</b> — מה המחיר הנוכחי כבר מניח. זו לרוב השאלה החשובה ביותר.</li>
-        <li><b>חוות הדעת</b> — איך משקיע בסגנון באפט היה שוקל את העסק, ההנהלה, החפיר והמחיר. זה תרגיל חשיבה, לא הוראה לפעולה.</li>
-        <li><b>הכי חשוב:</b> פתח את ההנחות במחשבון, שנה אותן, ותגיע למסקנה <b>שלך</b>. אם אינך מסכים עם ההנחות — המסקנה תשתנה.</li>
-      </ul>
-    </section>
-
-    <details class="card">
+    <details class="card mt">
       <summary>📚 מקורות לדוח הזה</summary>
-      <ul class="small">${rep.sources.map(s => `<li><a href="${s[1]}" target="_blank" rel="noopener noreferrer">${esc(s[0])}</a></li>`).join("")}</ul>
+      <ul class="small">${srcs.map(s => `<li><a href="${s[1]}" target="_blank" rel="noopener noreferrer">${esc(s[0])}</a></li>`).join("")}</ul>
     </details>`;
 
-    $("#weekSel").onchange = e => go("weekly/" + e.target.value);
-    $$("[data-dcf]").forEach(b => b.onclick = () => {
-      const t = b.dataset.dcf;
+    $("#weekSel").onchange = e => go("weekly/" + e.target.value + "/" + tab);
+    $$("[data-dcf]").forEach(bt => bt.onclick = () => {
+      const t = bt.dataset.dcf;
       window.DCF_PRESET = Object.assign({ name: t, mos: 30 }, rep.dcf[t]);
       go("tools/dcf");
     });
     if (ticker) {
-      const el = $("#stk-" + ticker);
-      if (el) { setTimeout(() => { el.scrollIntoView({ behavior: "smooth", block: "start" }); el.querySelector("summary").focus({ preventScroll: true }); }, 50); }
+      const el = $(tab === "technical" ? "#tk-" + ticker : "#stk-" + ticker);
+      if (el) { setTimeout(() => { el.scrollIntoView({ behavior: "smooth", block: "start" }); const s = el.querySelector("summary"); (s || el).setAttribute("tabindex", "-1"); (s || el).focus({ preventScroll: true }); }, 50); }
     }
   });
 };
+
 
 // טיזר לדף הבית
 function weeklyTeaser(el) {
@@ -239,7 +233,7 @@ function weeklyTeaser(el) {
     el.innerHTML = `
       <a class="card plain weekly-teaser" href="#weekly">
         <div class="row"><span style="font-size:1.6rem" aria-hidden="true">📰</span><div><b>הניתוח השבועי · ${esc(rep.title)}</b>
-          <div class="small muted">10 מניות, ניתוח בראש של באפט, שלושה תרחישי שווי לכל אחת</div></div><span class="spacer"></span><span class="btn small">לקריאה ←</span></div>
+          <div class="small muted">10 מניות: ניתוח פונדמנטלי, ניתוח טכני, והשילוב ביניהם</div></div><span class="spacer"></span><span class="btn small">לקריאה ←</span></div>
         <div class="chips mt">${all.map(s => `<span class="chip ${TONE[s.verdict.tone]}" lang="en">${TONE_ICON[s.verdict.tone]} ${s.ticker}</span>`).join("")}</div>
       </a>`;
   });

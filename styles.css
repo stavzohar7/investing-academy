@@ -647,3 +647,127 @@ html.a11y-still *, html.a11y-still *::before, html.a11y-still *::after { animati
   .stock details { display: block; }
   .lesson-body .box, .opinion, .bullbear, .swingbox { break-inside: avoid; }
 }
+
+/* =====================================================================
+   סידור האתר: חלקי קורס, בית, מסלול, ניווט תחתון, פאנל תצוגה
+   ===================================================================== */
+:root { --fund: #6cb3ff; --tech: #f2c14e; --risk: #2ecc8f; --mind: #b39dff; --master: #ffb84d; --base: #9aa8c3; }
+[data-theme="light"] { --fund: #1d64c4; --tech: #8a5d00; --risk: #0b7a52; --mind: #5b3fc7; --master: #a15c00; --base: #4f5d75; }
+
+.dlg-h { font-size: .95rem; color: var(--muted); margin: 16px 0 8px; }
+kbd { background: var(--card2); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 6px; font-family: Consolas, monospace; font-size: .85em; }
+
+/* בית */
+.stats-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 0 22px; }
+.stats-strip a { display: flex; flex-direction: column; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--text); text-decoration: none; }
+.stats-strip a:hover { border-color: var(--gold-bg); }
+.stats-strip b { font-size: 1.15rem; color: var(--gold); }
+.stats-strip span { font-size: .8rem; color: var(--muted); }
+.today-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 14px; }
+.today-row > * { min-width: 0; }
+.today-card { display: block; text-decoration: none; color: var(--text); }
+.today-card:hover { border-color: var(--gold-bg); }
+.parts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; }
+.part-card { display: block; text-decoration: none; color: var(--text); border-inline-start: 5px solid var(--base); }
+.part-card:hover { transform: translateY(-2px); }
+.part-ic { font-size: 1.7rem; }
+.kind-fund { border-inline-start-color: var(--fund); }
+.kind-tech { border-inline-start-color: var(--tech); }
+.kind-risk { border-inline-start-color: var(--risk); }
+.kind-mind { border-inline-start-color: var(--mind); }
+.kind-master { border-inline-start-color: var(--master); }
+.quick-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.quick-links a { padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); text-decoration: none; font-size: .92rem; min-height: 40px; display: inline-flex; align-items: center; gap: 6px; }
+.quick-links a:hover { border-color: var(--gold-bg); background: var(--card2); }
+details > summary { cursor: pointer; }
+details.card > summary { font-weight: 700; }
+
+/* מסלול: חלקים ושלבים מתקפלים */
+.part-sec { margin: 0 0 26px; padding-inline-start: 14px; border-inline-start: 5px solid var(--base); }
+.part-sec.kind-fund { border-inline-start-color: var(--fund); }
+.part-sec.kind-tech { border-inline-start-color: var(--tech); }
+.part-sec.kind-risk { border-inline-start-color: var(--risk); }
+.part-sec.kind-mind { border-inline-start-color: var(--mind); }
+.part-sec.kind-master { border-inline-start-color: var(--master); }
+.part-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.part-head h2 { margin: 0; font-size: 1.3rem; }
+.part-head p { margin: 2px 0 0; max-width: 62ch; }
+.part-head > div:nth-child(2) { flex: 1; min-width: 220px; }
+.part-prog { min-width: 90px; text-align: center; font-size: .85rem; }
+details.level { margin-bottom: 10px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg2); overflow: hidden; }
+details.level > summary { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: linear-gradient(90deg, var(--card2), var(--card)); list-style: none; min-height: 56px; }
+details.level > summary::-webkit-details-marker { display: none; }
+details.level > summary::after { content: "▾"; margin-inline-start: 4px; color: var(--muted); transition: transform .2s; }
+details.level[open] > summary::after { transform: rotate(180deg); }
+details.level > summary:hover { background: var(--card2); }
+details.level .level-num { width: 44px; height: 44px; font-size: 1.4rem; border-radius: 12px; display: grid; place-items: center; background: var(--bg); border: 1px solid var(--line); flex-shrink: 0; }
+.lv-title { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.lv-title .small { white-space: normal; }
+.lv-prog { font-weight: 700; color: var(--gold); }
+.level-body { padding: 4px 6px 10px; }
+.level-body .level-links { padding: 8px 12px; }
+.level-body .lessons { padding-top: 6px; }
+
+/* ניווט תחתון */
+.bottom-nav { display: none; }
+@media (max-width: 760px) {
+  .bottom-nav {
+    display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; bottom: 0; left: 0; right: 0; z-index: 55;
+    background: var(--topbar); backdrop-filter: blur(8px); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom);
+  }
+  .bottom-nav a, .bottom-nav button {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 58px;
+    color: var(--muted); text-decoration: none; font: inherit; font-size: .72rem; background: none; border: 0; cursor: pointer;
+  }
+  .bottom-nav span { font-size: 1.3rem; line-height: 1; }
+  .bottom-nav a[aria-current="page"] { color: var(--gold); font-weight: 700; }
+  body { padding-bottom: 66px; }
+  .to-top { bottom: 80px; }
+  .toast { bottom: 80px; }
+  .menu-btn { display: none !important; }
+}
+
+/* לשוניות הניתוח השבועי */
+.tabs a { background: var(--card); color: var(--muted); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; text-decoration: none; min-height: 42px; display: inline-flex; align-items: center; }
+.tabs a:hover { border-color: var(--gold-bg); color: var(--text); }
+.tabs a[aria-current="page"] { background: var(--gold-bg); color: var(--on-gold); border-color: var(--gold-bg); font-weight: 700; }
+.weektabs { position: sticky; top: 64px; z-index: 30; padding: 8px 0; background: var(--bg); margin-bottom: 14px; }
+@media (max-width: 760px) { .weektabs { top: 56px; overflow-x: auto; flex-wrap: nowrap; } .weektabs a { white-space: nowrap; } }
+
+/* כרטיס טכני */
+.stage { display: inline-block; padding: 3px 12px; border-radius: 999px; font-weight: 700; font-size: .85rem; border: 1px solid currentColor; white-space: nowrap; }
+.st-2 { color: var(--green); background: rgba(46,204,143,.1); }
+.st-1, .st-1-2, .st-3 { color: var(--gold); background: rgba(242,193,78,.1); }
+.st-3-4, .st-4 { color: var(--red); background: rgba(255,107,107,.1); }
+.rbar { position: relative; height: 70px; margin: 24px 24px 6px; }
+.rbar-track { position: absolute; top: 28px; left: 0; right: 0; height: 8px; border-radius: 999px; background: linear-gradient(90deg, rgba(255,107,107,.35), rgba(242,193,78,.3), rgba(46,204,143,.35)); border: 1px solid var(--line); }
+.rbar-pin { position: absolute; top: 22px; width: 4px; height: 20px; border-radius: 2px; transform: translateX(-50%); }
+.rbar-pin.p20, .lg.p20 { background: #6cb3ff; }
+.rbar-pin.p50, .lg.p50 { background: #b39dff; }
+.rbar-pin.p200, .lg.p200 { background: #f2c14e; }
+.rbar-pin.pp, .lg.pp { background: var(--text); }
+.rbar-pin.pp { top: 8px; height: 40px; width: 5px; }
+.rbar-pin.pp i { position: absolute; bottom: 46px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: .78rem; font-weight: 700; white-space: nowrap; color: var(--text); direction: ltr; }
+.rbar-end { position: absolute; top: 44px; font-size: .7rem; line-height: 1.2; color: var(--muted); }
+.rbar-end.l { left: -6px; } .rbar-end.r { right: -6px; text-align: right; }
+.rbar-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; margin-bottom: 10px; }
+.lg { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: 4px; }
+.rsi { margin: 6px 0 2px; }
+.rsi-track { position: relative; height: 10px; border-radius: 999px; background: linear-gradient(90deg, rgba(255,107,107,.5) 0 30%, var(--card2) 30% 70%, rgba(242,193,78,.5) 70% 100%); border: 1px solid var(--line); }
+.rsi-pin { position: absolute; top: -5px; width: 4px; height: 18px; background: var(--text); border-radius: 2px; transform: translateX(-50%); }
+.rsi-scale { display: flex; justify-content: space-between; font-size: .7rem; color: var(--muted); margin-top: 2px; }
+.perf-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.perf { display: flex; flex-direction: column; align-items: center; min-width: 74px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card2); font-weight: 700; }
+.riskbox { border-radius: 12px; padding: 10px 16px; background: rgba(46,204,143,.07); border: 1px solid rgba(46,204,143,.4); }
+.riskbox h4 { color: var(--green); margin-top: 0; }
+.tech-card section h4 { margin: 14px 0 6px; }
+.comb-card { border-inline-start: 4px solid var(--gold-bg); }
+
+/* מפת האתר */
+.sitemap-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sitemap-list li { display: flex; flex-direction: column; margin: 0; }
+.sitemap-list a { color: var(--text); text-decoration: none; }
+.sitemap-list a:hover { text-decoration: underline; }
+
+/* legend נסתר בתוך fieldset של שאלה: לא יורש את רוחב הבוחן */
+.q legend.sr-only, fieldset legend.sr-only { float: none; width: 1px; padding: 0; margin: -1px; position: absolute; }

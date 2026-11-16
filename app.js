@@ -111,7 +111,7 @@ function updateRankChip() {
 function applyPrefs() {
   const root = document.documentElement;
   const theme = root.dataset.theme || "dark";
-  $("#themeBtn").textContent = theme === "dark" ? "☀️" : "🌙";
+  $("#themeBtn").textContent = theme === "dark" ? "☀️ עבור למצב בהיר" : "🌙 עבור למצב כהה";
   $("#themeBtn").setAttribute("aria-label", theme === "dark" ? "עבור למצב בהיר" : "עבור למצב כהה");
   const f = +(root.dataset.font || 0);
   $("#fontDown").disabled = f <= 0; $("#fontUp").disabled = f >= 2;
@@ -143,7 +143,7 @@ const Routes = {};
 const PAGE_GROUPS = [
   { nav: "practice", label: "תרגול", pages: [["practice", "🧠 אימון יומי"], ["scenarios", "🤔 מה באפט היה עושה?"], ["lab", "🧪 מעבדת תרגול"], ["timemachine", "🕰️ מכונת הזמן"], ["glossary/cards", "🃏 כרטיסיות"]] },
   { nav: "tools", label: "כלים", pages: [["tools", "🧮 מחשבונים"], ["watchlist", "👁️ רשימת מעקב"], ["checklist", "✅ צ'קליסט באפט"], ["simulator", "🎯 סימולטור סווינג"], ["journal", "📓 יומן מסחר"]] },
-  { nav: "library", label: "ידע", pages: [["library", "📚 ספרייה"], ["timeline", "📜 ציר הזמן"], ["formulas", "📐 דף נוסחאות"], ["glossary", "📖 מילון"], ["faq", "❓ שאלות נפוצות"]] }
+  { nav: "library", label: "ידע", pages: [["library", "📚 ספרייה"], ["timeline", "📜 ציר הזמן"], ["formulas", "📐 דף נוסחאות"], ["glossary", "📖 מילון"], ["faq", "❓ שאלות נפוצות"], ["sitemap", "🧭 מפת האתר"]] }
 ];
 const groupOf = (page, h) => PAGE_GROUPS.find(g => g.pages.some(p => p[0] === h || p[0] === page));
 const TITLES = { home: "בית", path: "מסלול לימוד", tools: "כלים", simulator: "סימולטור סווינג", checklist: "צ'קליסט באפט", journal: "יומן מסחר", glossary: "מילון" };
@@ -154,7 +154,7 @@ function router() {
   const [page, ...rest] = h.split("/");
   const grp = groupOf(page, h);
   const navPage = page === "lesson" ? "path" : grp ? grp.nav : page;
-  $$(".nav a").forEach(a => a.dataset.page === navPage ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+  $$(".nav a, .bottom-nav a").forEach(a => a.dataset.page === navPage ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
   $("#mainNav").classList.remove("open"); $("#menuBtn").setAttribute("aria-expanded", "false"); $("#menuBtn").textContent = "☰";
   if (window.speechSynthesis) speechSynthesis.cancel();
   window.onscroll = null; $("#readbar").style.width = "0";
@@ -178,144 +178,7 @@ function nextLesson() {
   return lessons.find(l => !(l.id in State.data.done)) || lessons[lessons.length - 1];
 }
 
-Routes.home = function () {
-  const lessons = ALL_LESSONS();
-  const doneN = Object.keys(State.data.done).length;
-  const next = nextLesson();
-  const q = QUOTES[new Date().getDate() % QUOTES.length];
-  const r = currentRank();
-  const st = streak();
-
-  app().innerHTML = `
-  <section class="card hero" aria-labelledby="heroTitle">
-    <div>
-      <h1 id="heroTitle">ללמוד להשקיע כמו <span>המשקיעים הגדולים בעולם</span></h1>
-      <p class="muted">מסלול מובנה מאפס: יסודות, דוחות כספיים, הדרך של באפט וגרהאם, ניתוח לפי סקטורים, ניתוח טכני וסווינג מתקדם, ניהול סיכונים, פסיכולוגיה, מאקרו — ועד רמת מאסטר. עם בחנים, כלים, סימולטור ויומן מסחר.</p>
-      <div class="row mt">
-        <a class="btn" href="#lesson/${next.id}">${doneN ? "המשך ללמוד ←" : "התחל מאפס ←"}</a>
-        <a class="btn ghost" href="#path">למסלול המלא</a>
-      </div>
-      <p class="small muted mt">השיעור הבא: <b>${next.levelIcon} ${esc(next.title)}</b></p>
-    </div>
-    <blockquote class="quote">"${q[0]}"<span class="who">— ${q[1]}</span></blockquote>
-  </section>
-
-  ${!State.data.profile ? `<a class="card plain start-banner mb" href="#start">
-    <div class="row"><span style="font-size:2rem" aria-hidden="true">🚀</span>
-      <div><b>חדש כאן? התחל כאן</b><div class="small muted">ענה על 4 שאלות וקבל תוכנית לימוד אישית: מסלול, שיעורים ראשונים וקצב.</div></div>
-      <span class="spacer"></span><span class="btn small">בנה לי תוכנית ←</span></div></a>`
-  : `<p class="small muted mb">🗓️ התוכנית שלך: ${TRACKS[State.data.profile.goal].name} · ${{ 1: 2, 3: 4, 5: 7 }[State.data.profile.time]} שיעורים בשבוע · <a href="#start">עדכון התוכנית</a></p>`}
-
-  <div id="weeklyTeaser" class="mb"></div>
-  ${window.homeDaily ? homeDaily() : ""}
-
-  <h2>בחר את המסלול שלך</h2>
-  <div class="track-grid mb" role="group" aria-label="בחירת מסלול לימוד">
-    ${Object.entries(TRACKS).map(([k, t]) => `<button type="button" class="track" data-track="${k}" aria-pressed="${State.data.track === k}">
-      <span aria-hidden="true" style="font-size:1.5rem">${t.icon}</span><b>${t.name}</b><span class="small muted">${t.desc}</span></button>`).join("")}
-  </div>
-
-  <div class="grid grid-3 mb">
-    <div class="card stat"><div class="num">${doneN}/${lessons.length}</div><div class="lbl">שיעורים שהושלמו</div>
-      <div class="progress mt" role="progressbar" aria-label="התקדמות במסלול" aria-valuemin="0" aria-valuemax="${lessons.length}" aria-valuenow="${doneN}"><div style="width:${(doneN / lessons.length * 100).toFixed(0)}%"></div></div></div>
-    <div class="card stat"><div class="num" aria-hidden="true">${r.icon}</div><div class="lbl">הדרגה שלך: <b>${r.name}</b></div><div class="small muted">${State.data.xp} XP</div></div>
-    <div class="card stat"><div class="num">${st} <span aria-hidden="true">🔥</span></div><div class="lbl">ימי לימוד ברצף</div><div class="small muted">${st ? "המשך כך! השלם שיעור היום" : "השלם שיעור כדי להתחיל רצף"}</div>
-      ${window.dueCount ? `<a class="btn small mt" href="#practice">🧠 אימון יומי · ${dueCount()} שאלות</a>` : ""}</div>
-  </div>
-
-  <h2>🗺️ מפת המסע שלך</h2>
-  <p class="small muted">${window.CURRICULUM.length} שלבים מאפס ועד רמת מאסטר. לחץ על שלב כדי להמשיך מהשיעור הבא בו.</p>
-  ${window.journeyHTML ? journeyHTML() : ""}
-
-  <h2 class="mt">כלי העבודה שלך</h2>
-  <div class="grid grid-3">
-    ${[
-      ["🕰️", "מכונת הזמן", "חזור למשבר אמיתי — האם היית מחזיק?", "timemachine"],
-      ["🧮", "מחשבון DCF ושווי פנימי", "כמה העסק באמת שווה + Reverse DCF", "tools/dcf"],
-      ["🧩", "פירוק תשואה", "צמיחה, דיבידנד ושינוי מכפיל — מאיפה תגיע התשואה", "tools/returns"],
-      ["📏", "מחשבון גודל פוזיציה", "חוק ה-1%, R:R ותוחלת", "tools/position"],
-      ["👁️", "רשימת מעקב ותזות", "כתוב תזה, שווי ומחיר מעניין — וחכה בסבלנות", "watchlist"],
-      ["🃏", "כרטיסיות מונחים", "חזרה על 90+ מונחים במשחק זיכרון", "glossary/cards"]
-    ].map(t => `<a class="card" href="#${t[3]}"><div aria-hidden="true" style="font-size:1.6rem">${t[0]}</div><b>${t[1]}</b><p class="small muted" style="margin:4px 0 0">${t[2]}</p></a>`).join("")}
-  </div>`;
-
-  if (window.weeklyTeaser) weeklyTeaser($("#weeklyTeaser"));
-  $$(".track").forEach(b => b.onclick = () => {
-    State.data.track = b.dataset.track; State.save();
-    toast(`נבחר: ${TRACKS[b.dataset.track].name}`);
-    Routes.home();
-  });
-};
-
-// ---------- PATH ----------
-Routes.path = function () {
-  app().innerHTML = `
-    <h1>🗺️ מסלול הלימוד</h1>
-    <p class="muted">מומלץ ללמוד לפי הסדר. שיעור נחשב שהושלם כשעוברים את הבוחן ב-70% ומעלה. מסלול נוכחי: <b>${TRACKS[State.data.track].icon} ${TRACKS[State.data.track].name}</b> (<a href="#home">שינוי</a>)</p>
-    <div class="row mb">
-      <div class="field" style="flex:1;min-width:240px">
-        <label for="pathSearch">חיפוש בכל השיעורים</label>
-        <input id="pathSearch" type="search" placeholder="למשל: ROIC, סטופ, דיבידנד, בועה..." autocomplete="off" />
-      </div>
-      <label class="row small" style="margin-top:22px;cursor:pointer"><input type="checkbox" id="onlyOpen" /> הצג רק שיעורים שלא הושלמו</label>
-    </div>
-    <div id="searchOut" aria-live="polite"></div>
-    <a class="card plain capstone-banner mb" href="#capstone">
-      <div class="row"><span style="font-size:1.8rem" aria-hidden="true">🎓</span>
-        <div><b>מבנה הקורס</b><div class="small muted">כל שלב: שיעורים עם בוחן → משימה מעשית → מבחן שלב → תעודה. בסוף: מבחן גמר ופרויקט גמר — ניתוח מלא של חברה לבחירתך — ותעודת סיום הקורס.</div></div>
-        <span class="spacer"></span><span class="btn small">לפרויקט הגמר ←</span></div></a>
-    <div id="levelsOut"></div>
-    <div class="row"><span class="spacer"></span>
-      <button class="btn ghost small" type="button" onclick="resetProgress()">איפוס התקדמות</button>
-    </div>`;
-
-  const drawLevels = () => {
-    const only = $("#onlyOpen").checked;
-    $("#levelsOut").innerHTML = window.CURRICULUM.map((lv, i) => {
-      const d = lv.lessons.filter(x => x.id in State.data.done).length;
-      const items = lv.lessons.filter(ls => !only || !(ls.id in State.data.done));
-      if (!items.length) return "";
-      return `<section class="level ${inTrack(lv.id) ? "" : "dim"}" aria-labelledby="lv-${lv.id}">
-        <div class="level-head">
-          <div class="level-num" aria-hidden="true">${lv.icon}</div>
-          <div><h2 id="lv-${lv.id}"><a class="plain-link" href="#level/${lv.id}">שלב ${i + 1}: ${esc(lv.title)}</a></h2><p>${esc(lv.subtitle)}${inTrack(lv.id) ? "" : " · לא במסלול שבחרת"}</p>
-            <div class="row small level-links"><a href="#level/${lv.id}">📘 פתיחת השלב ומשימה</a><a href="#level/${lv.id}/exam">📝 מבחן שלב${window.lvExamScore && lvExamScore(lv.id) != null ? ` (${lvExamScore(lv.id)}%)` : ""}</a><a href="#summary/${lv.id}">📋 סיכום</a>
-              ${window.lvExamScore && lvExamScore(lv.id) >= 80 && d === lv.lessons.length ? `<a href="#certificate/${lv.id}">🎓 תעודה</a>` : ""}</div></div>
-          <div class="lvl-progress">${d}/${lv.lessons.length}<div class="progress" aria-hidden="true"><div style="width:${d / lv.lessons.length * 100}%"></div></div></div>
-        </div>
-        <ul class="lessons">
-          ${items.map(ls => {
-            const done = ls.id in State.data.done;
-            const no = lv.lessons.indexOf(ls) + 1;
-            return `<li><a class="lesson-tile ${done ? "done" : ""}" href="#lesson/${ls.id}">
-              <span class="check" aria-hidden="true">${done ? "✅" : "○"}</span>
-              <div class="t">${i + 1}.${no} ${esc(ls.title)}</div>
-              <div class="m">⏱ ${ls.minutes} דק' · ${ls.quiz.length} שאלות${done ? ` · <span class="good">הושלם (${State.data.done[ls.id]}%)</span>` : ""}</div>
-            </a></li>`;
-          }).join("")}
-        </ul>
-      </section>`;
-    }).join("") || `<p class="muted">כל הכבוד — השלמת את כל השיעורים! 🎉</p>`;
-  };
-
-  const index = ALL_LESSONS().map(l => ({ l, text: stripHtml(l.body + " " + l.takeaways.join(" ")) }));
-  const search = q => {
-    q = q.trim();
-    if (q.length < 2) { $("#searchOut").innerHTML = ""; return; }
-    const ql = q.toLowerCase();
-    const hits = index.filter(x => x.l.title.toLowerCase().includes(ql) || x.text.toLowerCase().includes(ql)).slice(0, 12);
-    const mark = s => esc(s).replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), m => `<mark>${m}</mark>`);
-    $("#searchOut").innerHTML = `<h2 class="small muted">${hits.length ? `נמצאו ${hits.length} שיעורים` : "לא נמצאו תוצאות"}</h2>
-      <ul class="search-results">${hits.map(({ l, text }) => {
-        const p = text.toLowerCase().indexOf(ql);
-        const snip = p >= 0 ? (p > 60 ? "…" : "") + text.slice(Math.max(0, p - 60), p + 100) + "…" : "";
-        return `<li><a href="#lesson/${l.id}"><b>${l.levelIcon} ${mark(l.title)}</b><div class="small muted">${mark(snip)}</div></a></li>`;
-      }).join("")}</ul>`;
-  };
-  $("#pathSearch").addEventListener("input", e => search(e.target.value));
-  $("#onlyOpen").addEventListener("change", drawLevels);
-  drawLevels();
-};
+// דף הבית ומסלול הלימוד נמצאים ב-layout.js
 
 function resetProgress() {
   if (!confirm("לאפס את כל ההתקדמות בשיעורים וה-XP? (היומן, הצ'קליסט וההערות יישמרו)")) return;

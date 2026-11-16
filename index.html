@@ -48,19 +48,23 @@
     <div class="top-actions">
       <a class="rank-chip" id="rankChip" href="#progress"></a>
       <button class="icon-btn" id="searchBtn" type="button" aria-haspopup="dialog" aria-label="חיפוש באתר (Ctrl+K)" title="חיפוש (Ctrl+K או /)">🔍</button>
-      <button class="icon-btn" id="a11yBtn" type="button" aria-haspopup="dialog" aria-label="תפריט נגישות">♿</button>
-      <button class="icon-btn" id="fontDown" type="button" aria-label="הקטן גודל טקסט">א−</button>
-      <button class="icon-btn" id="fontUp" type="button" aria-label="הגדל גודל טקסט">א+</button>
-      <button class="icon-btn" id="themeBtn" type="button" aria-label="החלף ערכת צבעים"></button>
+      <button class="icon-btn" id="a11yBtn" type="button" aria-haspopup="dialog" aria-label="תצוגה ונגישות: גודל טקסט, מצב כהה/בהיר, ניגודיות" title="תצוגה ונגישות">♿</button>
       <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="פתח תפריט" aria-expanded="false" aria-controls="mainNav">☰</button>
     </div>
   </header>
 
   <dialog id="a11yDlg" class="a11y-dlg" aria-labelledby="a11yTitle">
-    <h2 id="a11yTitle">♿ הגדרות נגישות</h2>
+    <h2 id="a11yTitle">♿ תצוגה ונגישות</h2>
     <p class="small muted">ההגדרות נשמרות בדפדפן הזה. אפשר לשלב ביניהן.</p>
+    <h3 class="dlg-h">גודל טקסט</h3>
+    <div class="row">
+      <button class="btn ghost" id="fontDown" type="button" aria-label="הקטן גודל טקסט">א− הקטן</button>
+      <button class="btn ghost" id="fontUp" type="button" aria-label="הגדל גודל טקסט">א+ הגדל</button>
+    </div>
+    <h3 class="dlg-h">ערכת צבעים</h3>
+    <button class="btn ghost" id="themeBtn" type="button" aria-label="החלף ערכת צבעים"></button>
+    <h3 class="dlg-h">נגישות</h3>
     <div id="a11yOpts"></div>
-    <p class="small">גודל טקסט: כפתורי <b>א−</b> / <b>א+</b> בראש העמוד. מצב בהיר/כהה: כפתור ☀️/🌙.</p>
     <div class="row mt">
       <button type="button" class="btn" id="a11yClose">סגור</button>
       <button type="button" class="btn ghost" id="a11yReset">איפוס</button>
@@ -82,16 +86,19 @@
 
   <div id="live" class="sr-only" role="status" aria-live="polite"></div>
 
+  <nav class="bottom-nav" aria-label="ניווט תחתון">
+    <a href="#home" data-page="home"><span aria-hidden="true">🏠</span>בית</a>
+    <a href="#path" data-page="path"><span aria-hidden="true">🗺️</span>לימוד</a>
+    <a href="#practice" data-page="practice"><span aria-hidden="true">🧠</span>תרגול</a>
+    <a href="#weekly" data-page="weekly"><span aria-hidden="true">📰</span>שבועי</a>
+    <button type="button" id="bnMore" aria-label="עוד — תפריט מלא"><span aria-hidden="true">☰</span>עוד</button>
+  </nav>
+
   <footer class="footer">
     <nav class="footer-links" aria-label="קישורים נוספים">
+      <a href="#sitemap">🧭 מפת האתר</a>
       <a href="#start">🚀 התחל כאן</a>
       <a href="#faq">❓ שאלות נפוצות</a>
-      <a href="#scenarios">🤔 מה באפט היה עושה?</a>
-      <a href="#timeline">📜 ציר הזמן של השווקים</a>
-      <a href="#timemachine">🕰️ מכונת הזמן</a>
-      <a href="#lab">🧪 מעבדת תרגול</a>
-      <a href="#weekly/scorecard">📈 כרטיס הביצועים</a>
-      <a href="#formulas">📐 דף נוסחאות</a>
       <a href="#progress">📊 ההתקדמות שלי</a>
       <a href="#accessibility">♿ הצהרת נגישות</a>
     </nav>
@@ -111,12 +118,15 @@
   <script src="content10.js"></script>
   <script src="content11.js"></script>
   <script src="content12.js"></script>
+  <script src="content13.js"></script>
   <script src="glossary.js"></script>
+  <script src="parts.js"></script>
   <script src="weekly/manifest.js"></script>
   <script src="weekly/scorecard.js"></script>
   <script src="app.js"></script>
   <script src="tools.js"></script>
   <script src="weekly.js"></script>
+  <script src="weekly-tech.js"></script>
   <script src="library.js"></script>
   <script src="practice.js"></script>
   <script src="extras.js"></script>
@@ -124,6 +134,7 @@
   <script src="hub.js"></script>
   <script src="play.js"></script>
   <script src="course.js"></script>
+  <script src="layout.js"></script>
 
   <button type="button" class="to-top" id="toTop" aria-label="חזרה לראש העמוד" hidden>↑</button>
 </body>
