@@ -185,7 +185,7 @@ Routes.weekly = function (id, a, b) {
     if (!rep) { app().innerHTML = `<h1>📰 הניתוח השבועי</h1><p class="bad">לא הצלחנו לטעון את הדוח ${esc(id)}.</p>`; return; }
     const tabName = WEEK_TABS.find(t => t[0] === tab)[1];
     document.title = `${tabName} · ${rep.title} — הניתוח השבועי`;
-    const body = tab === "fundamental" ? fundamentalTab(rep, id, ticker) : tab === "technical" ? techTab(rep, id) : tab === "combined" ? combinedTab(rep, id) : overviewTab(rep, id);
+    const body = tab === "fundamental" ? fundamentalTab(rep, id, ticker) : tab === "technical" ? techTab(rep, id) : tab === "combined" ? combinedTab(rep, id) : tab === "outlook" ? outlookTab(rep, id) : overviewTab(rep, id);
     const srcs = [...rep.sources, ...((rep.technical && rep.technical.sources) || [])];
     app().innerHTML = `
     <div class="row">
@@ -216,7 +216,7 @@ Routes.weekly = function (id, a, b) {
       go("tools/dcf");
     });
     if (ticker) {
-      const el = $(tab === "technical" ? "#tk-" + ticker : "#stk-" + ticker);
+      const el = $(tab === "technical" ? "#tk-" + ticker : tab === "outlook" ? "#ok-" + ticker : "#stk-" + ticker);
       if (el) { setTimeout(() => { el.scrollIntoView({ behavior: "smooth", block: "start" }); const s = el.querySelector("summary"); (s || el).setAttribute("tabindex", "-1"); (s || el).focus({ preventScroll: true }); }, 50); }
     }
   });

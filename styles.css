@@ -771,3 +771,13 @@ details.level .level-num { width: 44px; height: 44px; font-size: 1.4rem; border-
 
 /* legend נסתר בתוך fieldset של שאלה: לא יורש את רוחב הבוחן */
 .q legend.sr-only, fieldset legend.sr-only { float: none; width: 1px; padding: 0; margin: -1px; position: absolute; }
+
+/* תחזית ואזורי מחיר */
+.scen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 10px; }
+.scen { border-radius: 12px; padding: 10px 14px; border: 1px solid var(--line); background: var(--card2); }
+.scen p { margin: 6px 0 0; font-size: .95rem; }
+.scen.bear { border-color: rgba(255,107,107,.5); }
+.scen.bull { border-color: rgba(46,204,143,.5); }
+.scen.base { border-color: rgba(242,193,78,.5); }
+tr.zone-on td { background: rgba(242,193,78,.14); font-weight: 700; }
+.outlook-card { margin-bottom: 18px; }

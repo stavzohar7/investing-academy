@@ -7,7 +7,8 @@ const WEEK_TABS = [
   ["overview", "🏠 סקירה", "מצב השוק ותמונה כללית"],
   ["fundamental", "🏢 פונדמנטלי", "מה העסק שווה — ומה המחיר מניח"],
   ["technical", "📉 טכני", "מגמה, ממוצעים, תנודתיות וסיכון"],
-  ["combined", "🧩 משולב", "מתי שתי העדשות מסכימות — ומתי לא"]
+  ["combined", "🧩 משולב", "מתי שתי העדשות מסכימות — ומתי לא"],
+  ["outlook", "🔮 תחזית ומחיר", "תרחישים, אזורי מחיר ומרווח ביטחון"]
 ];
 
 // ---------- חישובים טכניים ----------
@@ -199,4 +200,88 @@ function overviewTab(rep, id) {
       <div class="lesson-body">${rep.insight.body}</div>
       <p class="small">שיעורים קשורים: ${rep.insight.lessons.map(l => `<a href="#lesson/${l}">${esc(lessonTitle(l))}</a>`).join(" · ")}</p>
     </section>`;
+}
+
+
+// ---------- לשונית: תחזית ומחיר ----------
+function priceZone(p, sc) {
+  const b = sc.base, m20 = b * 0.8, m30 = b * 0.7;
+  if (p <= m30) return { tone: "good", key: 0, label: "מתחת לאזור מרווח של 30%" };
+  if (p <= m20) return { tone: "good", key: 1, label: "באזור מרווח ביטחון (20%-30%)" };
+  if (p <= b) return { tone: "mid", key: 2, label: "מתחת לשווי הבסיס, בלי מרווח של 20%" };
+  if (p <= sc.bull) return { tone: "mid", key: 3, label: "מעל שווי הבסיס — המחיר מניח תרחיש טוב מהבסיס" };
+  return { tone: "bad", key: 4, label: "מעל התרחיש האופטימי" };
+}
+function outlookFill(txt, f, o) {
+  const sc = f.valuation.scenarios, p = o.live.price, m20 = sc.base * 0.8, m30 = sc.base * 0.7;
+  const gap = m => Math.abs((m / p - 1) * 100).toFixed(0);
+  return (txt || "").replace(/\{price\}/g, p.toFixed(2)).replace(/\{base\}/g, sc.base).replace(/\{bear\}/g, sc.bear).replace(/\{bull\}/g, sc.bull)
+    .replace(/\{mos20\}/g, m20.toFixed(0)).replace(/\{mos30\}/g, m30.toFixed(0)).replace(/\{gap20\}/g, gap(m20)).replace(/\{gap30\}/g, gap(m30));
+}
+
+function outlookCard(f, o, T, id) {
+  const sc = f.valuation.scenarios, p = o.live.price, z = priceZone(p, sc), m20 = sc.base * 0.8, m30 = sc.base * 0.7;
+  const chg = (p / f.price - 1) * 100, vsBase = (p / sc.base - 1) * 100;
+  const st = T && T.stocks[f.ticker] ? techStage(T.stocks[f.ticker]) : null;
+  const fill = t => outlookFill(t, f, o);
+  const row = (label, price, key) => `<tr class="${z.key === key ? "zone-on" : ""}"><td>${label}</td><td dir="ltr" style="text-align:right">$${price}</td><td>${p <= price ? "✔ המחיר מתחת" : `${((price / p - 1) * 100).toFixed(0)}% ממחיר היום`}</td></tr>`;
+  return `
+  <article class="stock card outlook-card" id="ok-${f.ticker}" aria-labelledby="oh-${f.ticker}">
+    <header class="stock-head">
+      <div class="ticker" lang="en">${f.ticker}</div>
+      <div class="stock-title"><h3 id="oh-${f.ticker}">${esc(f.he)} <span class="muted small" lang="en">${esc(f.name)}</span></h3>
+        <div class="small muted">${esc(f.sector)}</div></div>
+      <div class="stock-price"><div class="big" dir="ltr">$${p.toFixed(2)}</div><div class="small muted">מחיר ב-18.11 · ${pc(chg)} מהדוח</div></div>
+    </header>
+    <div class="row mt"><span class="verdict ${z.tone}">${TONE_ICON[z.tone]} ${z.label}</span>${st ? `<span class="stage st-${st.key}">📉 ${st.label}</span>` : ""}</div>
+    <p class="small muted">המחיר ${vsBase >= 0 ? "מעל" : "מתחת ל"}שווי הבסיס שלנו (${sc.base}$) ב-${Math.abs(vsBase).toFixed(0)}%.</p>
+    ${valueBar(sc, p)}
+    <div style="overflow-x:auto"><table class="data">
+      <caption class="sr-only">אזורי מחיר של ${esc(f.he)}</caption>
+      <tr><th scope="col">אזור (לפי המודל)</th><th scope="col">מחיר</th><th scope="col">מרחק</th></tr>
+      ${row("אופטימי", sc.bull, 4)}${row("שווי בסיס", sc.base, 2)}${row("מרווח ביטחון 20%", m20.toFixed(0), 1)}${row("מרווח ביטחון 30%", m30.toFixed(0), 0)}
+    </table></div>
+    <h4 class="mt">🔭 שלושה תרחישים להמשך</h4>
+    <div class="scen-grid">
+      <div class="scen bear"><b>🐻 פסימי</b><p>${fill(o.scen.bear)}</p></div>
+      <div class="scen base"><b>⚖️ בסיס</b><p>${fill(o.scen.base)}</p></div>
+      <div class="scen bull"><b>🐂 אופטימי</b><p>${fill(o.scen.bull)}</p></div>
+    </div>
+    <div class="grid grid-2 mt">
+      <div class="bullbear bull"><h4>🔼 מה היה מחזק את התרחיש הטוב</h4><ul>${o.up.map(x => `<li>${x}</li>`).join("")}</ul></div>
+      <div class="bullbear bear"><h4>🔽 מה היה מחליש אותו</h4><ul>${o.down.map(x => `<li>${x}</li>`).join("")}</ul></div>
+    </div>
+    <section class="opinion mt"><h4>🧭 המסקנה המותנית</h4><p>${fill(o.conclusion)}</p></section>
+    <p class="small"><a href="#weekly/${id}/fundamental/${f.ticker}">🏢 פונדמנטלי</a> · <a href="#weekly/${id}/technical/${f.ticker}">📉 טכני</a> · <a href="#lesson/l3-2">שיעור: מרווח ביטחון</a></p>
+  </article>`;
+}
+
+function outlookTab(rep, id) {
+  const O = rep.outlook, T = rep.technical;
+  if (!O) return `<div class="card"><p class="muted">לדוח הזה אין עדיין תחזית ואזורי מחיר.</p></div>`;
+  const all = rep.sections.flatMap(s => s.stocks);
+  const rows = all.map(f => { const o = O.stocks[f.ticker], sc = f.valuation.scenarios; return { f, o, z: priceZone(o.live.price, sc), gap20: (sc.base * 0.8 / o.live.price - 1) * 100 }; })
+    .sort((a, b) => a.z.key - b.z.key || b.gap20 - a.gap20);
+  return `
+    <section class="card mb"><h2>🔮 תחזית תרחישים ואזורי מחיר</h2>
+      <div class="lesson-body">${O.intro}</div>
+      <p class="small muted">מחירים: ${O.liveAsOf}.</p>
+      <div class="disclaimer" role="note"><b>⚠️ לא תחזית ולא המלצה:</b> אי אפשר לדעת לאן מחיר ינוע. מה שאנחנו מציגים הוא איפה המחיר עומד ביחס להערכות השווי שלנו, ומה צריך לקרות בכל תרחיש. "יקר" אינו אומר "ירד", ו"זול" אינו אומר "יעלה".</div>
+      ${O.nvdaNote ? `<p class="small">⚠️ <b>אנבידיה:</b> ${O.nvdaNote}</p>` : ""}</section>
+
+    <section class="card mb" aria-labelledby="ozt"><h2 id="ozt">📋 המחיר היום מול השווי — מהקרוב לאזור מרווח ועד הרחוק</h2>
+      <div style="overflow-x:auto"><table class="data">
+        <caption class="sr-only">מחיר נוכחי מול אזורי מרווח ביטחון</caption>
+        <tr><th scope="col">מניה</th><th scope="col">מחיר 18.11</th><th scope="col">שווי בסיס</th><th scope="col">מצב</th><th scope="col">עד אזור 20%</th></tr>
+        ${rows.map(r => `<tr><td><a href="#weekly/${id}/outlook/${r.f.ticker}"><b lang="en">${r.f.ticker}</b> ${esc(r.f.he)}</a></td>
+          <td dir="ltr" style="text-align:right">$${r.o.live.price.toFixed(2)}</td><td dir="ltr" style="text-align:right">$${r.f.valuation.scenarios.base}</td>
+          <td><span class="${r.z.tone}">${TONE_ICON[r.z.tone]} ${r.z.label}</span></td>
+          <td dir="ltr" style="text-align:right" class="${r.gap20 >= 0 ? "good" : "bad"}">${r.gap20 >= 0 ? "✔ כבר באזור" : r.gap20.toFixed(0) + "%"}</td></tr>`).join("")}
+      </table></div>
+      <p class="small muted mt">"עד אזור 20%" = כמה המחיר צריך לרדת כדי להגיע ל-80% משווי הבסיס שלנו. מספר קטן = קרוב לאזור.</p></section>
+
+    ${rep.sections.map(sec => `<section class="mb" aria-labelledby="os-${sec.id}"><h2 id="os-${sec.id}">${sec.title}</h2>
+      ${sec.stocks.map(f => outlookCard(f, O.stocks[f.ticker], T, id)).join("")}</section>`).join("")}
+
+    <section class="card mb"><h2>⚠️ מגבלות</h2><ul class="small">${O.limits.map(l => `<li>${l}</li>`).join("")}</ul></section>`;
 }

@@ -54,6 +54,15 @@ The app (`weekly.js`) renders it at `#weekly`. All text shown to the user is in 
      `learn` ids must exist (use technical lessons `l4-*`, `la-*` and the bridge lesson `l7-9`).
    - Write `method` strings starting with Hebrew (e.g. `מודל DCF — ...`) so right-to-left text renders correctly.
    - Use template literals for text; avoid backticks inside the text; write ארה״ב with the ״ character.
+4b. **Outlook block (tab "תחזית ומחיר").** Also append
+   `window.WEEKLY_REPORTS["<id>"].outlook = { liveAsOf, intro, nvdaNote?, stocks:{TICKER:{live:{price,perfW,d50,rsi}, scen:{bear,base,bull}, up[], down[], conclusion}}, limits[] }`
+   (copy the newest report). Fetch the *current* price from Finviz on the day of writing. Value zones (base, 20%/30% margin-of-safety
+   prices), gaps and the status label are computed by the app from `valuation.scenarios` — in text use tokens
+   `{price} {base} {bear} {bull} {mos20} {mos30} {gap20} {gap30}`. Rules: scenarios describe what happens in the *business*
+   (not price targets); `conclusion` is a CONDITIONAL statement ("if you require a margin of safety… / if you hold the long-term
+   thesis…") — never "buy"/"sell"/"wait" as an instruction, never a probability-weighted price target; always say "expensive ≠ will fall".
+   Never claim a zone is near a technical level unless the numbers show it (check against 52-week low / SMAs). Flag anything unverified
+   (e.g. a company's results that you could not confirm).
 5. **Register it**: add the new date at the **top** of `window.WEEKLY_MANIFEST` in `weekly/manifest.js`.
 6. **Measure and learn — update `weekly/scorecard.js`** (do this every week, it is how the app learns):
    - **Mark**: get the latest closing price (same day as the new report's prices) of *every* ticker already in
