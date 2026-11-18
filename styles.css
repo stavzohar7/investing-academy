@@ -793,3 +793,14 @@ tr.zone-on td { background: rgba(242,193,78,.14); font-weight: 700; }
 .news-story h3 { margin: 10px 0 6px; }
 .news-lens { background: var(--card2); border-radius: 10px; padding: 8px 12px; }
 #edSel { max-width: 100%; }
+
+/* ===== חדשות: ליטוש ===== */
+.news-story { border-inline-start: 5px solid var(--line); }
+.news-story:has(.news-move.bad) { border-inline-start-color: var(--bad, #c0392b); }
+.news-story:has(.news-move.good) { border-inline-start-color: var(--good, #1a7f37); }
+.news-story:has(.news-move.mid) { border-inline-start-color: var(--gold-bg, #d4a017); }
+.news-story .row { align-items: center; gap: 8px; flex-wrap: wrap; }
+.news-story p { line-height: 1.7; }
+.news-lens { border-inline-start: 3px solid var(--gold-bg, #d4a017); }
+.today-card b { display: block; margin-top: 4px; }
+@media (prefers-reduced-motion: no-preference) { .news-story { transition: box-shadow .2s; } .news-story:hover { box-shadow: 0 4px 14px rgba(0,0,0,.08); } }
