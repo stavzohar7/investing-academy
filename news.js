@@ -40,6 +40,9 @@ Routes.news = function (id) {
       <p class="muted">מהדורה יומית בעברית על מה שהזיז את וול סטריט — בלי המלצות, עם מקורות, ועם סימון ברור למה שלא אימתנו.</p>
       <div class="field"><label for="edSel">מהדורה</label>
         <select id="edSel">${man.map(m => `<option value="${m.id}" ${m.id === cur ? "selected" : ""}>${heDate(m.id)} — ${esc(m.title)}</option>`).join("")}</select></div>
+      <section class="card mb" aria-labelledby="nwmy"><h2 id="nwmy">👁️ המניות שלי בחדשות</h2>
+        <div class="field"><label for="myTick">סימולי מניות מופרדים בפסיק (למשל NVDA, AAPL)</label><input id="myTick" dir="ltr" autocomplete="off" value="${esc(myTickers().join(", "))}"></div>
+        <div id="myNews" aria-live="polite"></div></section>
       <section class="card mb" aria-labelledby="nw0">
         <p class="small muted">${esc(e.session)}${e.updated ? ` · עודכן ${esc(e.updated)}` : ""}</p>
         <h2 id="nw0">${esc(e.headline)}</h2>
@@ -55,6 +58,9 @@ Routes.news = function (id) {
       <section class="card mb tip"><h2>💡 לקח היום: ${esc(e.lessonOfDay.title)}</h2><p>${esc(e.lessonOfDay.text)}</p><p><a href="${e.lessonOfDay.link}">${esc(e.lessonOfDay.linkText)}</a></p></section>
       <section class="card mb"><h2>⚠️ מה לא אומת</h2><ul>${e.notVerified.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
         <p class="small muted">התוכן לימודי בלבד ואינו ייעוץ השקעות. טעינו? <a href="#about">יומן התיקונים</a>.</p></section>`;
+    const inp = $("#myTick"); const draw = () => renderMyNews(man, $("#myNews"));
+    inp.addEventListener("change", () => { localStorage.setItem(TICK_KEY, JSON.stringify(inp.value.split(/[,s]+/).map(x => x.trim().toUpperCase()).filter(Boolean))); draw(); });
+    draw();
     $("#edSel").addEventListener("change", ev => { location.hash = "#news/" + ev.target.value; });
   });
 };
@@ -98,3 +104,19 @@ window.newsTeaser = function (el) {
   document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
   setTimeout(check, 4000);
 })();
+
+// ===================== המניות שלי בחדשות =====================
+const TICK_KEY = "ia-news-tickers";
+function myTickers() { try { return JSON.parse(localStorage.getItem(TICK_KEY)) || []; } catch (e) { return []; } }
+function renderMyNews(man, el) {
+  const tk = myTickers();
+  if (!tk.length) { el.innerHTML = `<p class="small muted">הוסף סימולים ונציג כאן כל כתבה שהזכירה אותם, מכל המהדורות.</p>`; return; }
+  el.innerHTML = `<p class="small muted">מחפש…</p>`;
+  let left = man.length; const found = [];
+  man.forEach(m => loadEdition(m.id, e => {
+    if (e) e.stories.forEach(s => { const syms = s.ticker.toUpperCase().split(/[^A-Z0-9.]+/).filter(Boolean); if (tk.some(x => syms.includes(x))) found.push({ id: m.id, s }); });
+    if (--left) return;
+    found.sort((x, y) => y.id.localeCompare(x.id));
+    el.innerHTML = found.length ? found.map(f => `<p><span class="chip">${esc(f.s.ticker)}</span> <a href="#news/${esc(f.id)}">${heDate(f.id.slice(0, 10))}</a> — ${esc(f.s.headline)}</p>`).join("") : `<p class="small muted">לא נמצאו כתבות על ${esc(tk.join(", "))} במהדורות הקיימות.</p>`;
+  }));
+}
