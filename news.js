@@ -41,7 +41,7 @@ Routes.news = function (id) {
       <div class="field"><label for="edSel">מהדורה</label>
         <select id="edSel">${man.map(m => `<option value="${m.id}" ${m.id === cur ? "selected" : ""}>${heDate(m.id)} — ${esc(m.title)}</option>`).join("")}</select></div>
       <section class="card mb" aria-labelledby="nw0">
-        <p class="small muted">${esc(e.session)}</p>
+        <p class="small muted">${esc(e.session)}${e.updated ? ` · עודכן ${esc(e.updated)}` : ""}</p>
         <h2 id="nw0">${esc(e.headline)}</h2>
         <p>${esc(e.summary)}</p>
         <div class="table-wrap"><table><caption class="sr-only">תנועות המדדים</caption>
@@ -49,6 +49,7 @@ Routes.news = function (id) {
           <tbody>${e.market.map(m => `<tr><th scope="row">${esc(m.name)}</th><td>${m.move}</td><td class="small">${esc(m.note)}</td></tr>`).join("")}</tbody></table></div>
         ${e.conflicts ? `<p class="small muted">⚠️ ${esc(e.conflicts)}</p>` : ""}
       </section>
+      ${e.israel ? `<section class="card mb" aria-labelledby="nwil"><h2 id="nwil">🇮🇱 בישראל: ${esc(e.israel.headline)}</h2><ul>${e.israel.points.map(x => `<li>${esc(x)}</li>`).join("")}</ul><p class="small">מקורות: ${e.israel.sources.map(x => `<a href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">${esc(x.t)}</a>`).join(" · ")}</p></section>` : ""}
       <h2>מניות שהיו בחדשות</h2>
       ${e.stories.map(storyCard).join("")}
       <section class="card mb tip"><h2>💡 לקח היום: ${esc(e.lessonOfDay.title)}</h2><p>${esc(e.lessonOfDay.text)}</p><p><a href="${e.lessonOfDay.link}">${esc(e.lessonOfDay.linkText)}</a></p></section>
@@ -64,3 +65,36 @@ window.newsTeaser = function (el) {
   if (!el || !man.length) return;
   el.innerHTML = `<a class="card today-card" href="#news"><div class="small muted">🗞️ חדשות מהמהדורה האחרונה · ${heDate(man[0].id)}</div><b>${esc(man[0].title)}</b></a>`;
 };
+
+// ===================== רענון אוטומטי של חדשות =====================
+// כל כמה דקות (וכשחוזרים ללשונית) בודקים אם פורסמה מהדורה חדשה, ומציעים לטעון אותה בלי לרענן את כל האתר.
+(function () {
+  let busy = false;
+  function banner(id, title) {
+    let b = document.getElementById("newsBanner");
+    if (!b) { b = document.createElement("div"); b.id = "newsBanner"; b.className = "news-banner"; b.setAttribute("role", "status"); document.body.appendChild(b); }
+    b.innerHTML = `🗞️ מהדורה חדשה: <b>${esc(title)}</b> <a class="btn small" href="#news/${esc(id)}">קרא</a> <button type="button" class="btn ghost small" aria-label="סגור הודעה">✕</button>`;
+    b.querySelector("button").onclick = () => b.remove();
+    b.querySelector("a").onclick = () => b.remove();
+  }
+  function check() {
+    if (busy || document.hidden || !navigator.onLine) return;
+    busy = true;
+    fetch("daily/manifest.js?ts=" + Date.now(), { cache: "no-store" })
+      .then(r => r.ok ? r.text() : Promise.reject())
+      .then(t => {
+        const known = (window.NEWS_MANIFEST || []).map(m => m.id);
+        const prev = window.NEWS_MANIFEST;
+        (0, eval)(t);
+        const fresh = (window.NEWS_MANIFEST || []).filter(m => !known.includes(m.id));
+        if (!fresh.length) return;
+        if (window.newsTeaser && document.getElementById("newsTeaser")) newsTeaser(document.getElementById("newsTeaser"));
+        banner(fresh[0].id, fresh[0].title);
+      })
+      .catch(() => {})
+      .finally(() => { busy = false; });
+  }
+  setInterval(check, 10 * 60 * 1000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
+  setTimeout(check, 4000);
+})();
