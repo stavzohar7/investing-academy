@@ -141,7 +141,7 @@ function setupPrefs() {
 const Routes = {};
 // קבוצות עמודים: כל קבוצה מופיעה כפריט אחד בתפריט הראשי, עם תפריט משנה
 const PAGE_GROUPS = [
-  { nav: "practice", label: "תרגול", pages: [["practice", "🧠 אימון יומי"], ["scenarios", "🤔 מה באפט היה עושה?"], ["lab", "🧪 מעבדת תרגול"], ["timemachine", "🕰️ מכונת הזמן"], ["glossary/cards", "🃏 כרטיסיות"]] },
+  { nav: "practice", label: "תרגול", pages: [["practice", "🧠 אימון יומי"], ["scenarios", "🤔 מה באפט היה עושה?"], ["detective", "🕵️ בלש הדוחות"], ["style", "🧬 איזה סגנון אתה?"], ["lab", "🧪 מעבדת תרגול"], ["timemachine", "🕰️ מכונת הזמן"], ["glossary/cards", "🃏 כרטיסיות"]] },
   { nav: "tools", label: "כלים", pages: [["tools", "🧮 מחשבונים"], ["watchlist", "👁️ רשימת מעקב"], ["checklist", "✅ צ'קליסט באפט"], ["simulator", "🎯 סימולטור סווינג"], ["journal", "📓 יומן מסחר"]] },
   { nav: "library", label: "ידע", pages: [["library", "📚 ספרייה"], ["timeline", "📜 ציר הזמן"], ["formulas", "📐 דף נוסחאות"], ["glossary", "📖 מילון"], ["faq", "❓ שאלות נפוצות"], ["sitemap", "🧭 מפת האתר"]] }
 ];
