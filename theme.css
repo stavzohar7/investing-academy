@@ -1,0 +1,107 @@
+/* ===================================================================
+   עיצוב חדש — "מקצועי ונקי": משטחים שטוחים, כותרות סריפיות, צבע דגש אחד (טורקיז),
+   היררכיה ברורה, ניווט עליון בסגנון לשוניות. נטען אחרי styles.css ועוקף אותו.
+   מצב ניגודיות גבוהה (a11y-contrast) נשאר כפי שהיה.
+   =================================================================== */
+
+/* ---------- פלטת צבעים ---------- */
+:root[data-theme="light"]:not(.a11y-contrast) {
+  --bg: #f5f7fa; --bg2: #ffffff; --card: #ffffff; --card2: #eef2f6; --line: #dde3ec;
+  --text: #1c2736; --strong: #0a1a2f; --muted: #556275;
+  --gold: #0b6b63; --gold-bg: #0f766e; --gold-bg2: #0c5f58; --on-gold: #ffffff;
+  --green: #0e7a4d; --red: #c23030; --blue: #1b5cbf; --purple: #5b3fc7; --focus: #1b5cbf;
+  --shadow: 0 1px 2px rgba(15, 30, 55, .06), 0 6px 18px rgba(15, 30, 55, .05);
+  --page-bg: #f5f7fa; --topbar: rgba(255, 255, 255, .96); --radius: 12px;
+}
+:root[data-theme="dark"]:not(.a11y-contrast) {
+  --bg: #0b1019; --bg2: #101826; --card: #121b2a; --card2: #182335; --line: #25324a;
+  --text: #e4eaf3; --strong: #ffffff; --muted: #9aa8bf;
+  --gold: #5eead4; --gold-bg: #2dd4bf; --gold-bg2: #5eead4; --on-gold: #05211d;
+  --green: #4ade9a; --red: #ff8080; --blue: #7ab6ff; --purple: #b9a6ff; --focus: #7ab6ff;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 22px rgba(0, 0, 0, .28);
+  --page-bg: #0b1019; --topbar: rgba(11, 16, 25, .94); --radius: 12px;
+}
+
+/* ---------- טיפוגרפיה ---------- */
+body { font-size: 1.02rem; line-height: 1.8; -webkit-font-smoothing: antialiased; }
+h1, h2 { font-family: "Frank Ruhl Libre", "Heebo", Georgia, serif; color: var(--strong); letter-spacing: -.005em; }
+h1 { font-size: clamp(1.9rem, 4.2vw, 2.6rem); font-weight: 900; line-height: 1.2; margin-bottom: .45em; }
+h2 { font-size: clamp(1.35rem, 2.6vw, 1.7rem); font-weight: 700; margin-top: 1.4em; }
+h3 { font-weight: 700; color: var(--strong); font-size: 1.12rem; }
+html.a11y-readable h1, html.a11y-readable h2 { font-family: Arial, "Segoe UI", sans-serif; }
+#app > h1 { padding-bottom: .35em; border-bottom: 2px solid var(--gold-bg); display: inline-block; }
+#app > h1 + p.muted { max-width: 70ch; font-size: 1.05rem; }
+.card h2 { margin-top: 0; }
+
+/* ---------- כותרת עליונה וניווט ---------- */
+.topbar { padding: 6px clamp(12px, 3vw, 28px); gap: 18px; background: var(--topbar); border-bottom: 1px solid var(--line); box-shadow: 0 1px 0 rgba(0, 0, 0, .02); }
+.logo { width: 38px; height: 38px; display: grid; place-items: center; font-size: 1.25rem; background: var(--gold-bg); color: var(--on-gold); border-radius: 10px; }
+.brand-title { font-family: "Frank Ruhl Libre", "Heebo", serif; font-weight: 900; font-size: 1.2rem; color: var(--strong); letter-spacing: -.01em; }
+.brand-sub { color: var(--muted); font-size: .74rem; margin-top: -3px; }
+.nav { gap: 0; }
+.nav a { border-radius: 0; padding: 14px 12px; font-weight: 500; color: var(--muted); border-bottom: 3px solid transparent; background: transparent; }
+.nav a:hover { color: var(--strong); background: transparent; border-bottom-color: var(--line); }
+.nav a[aria-current="page"] { color: var(--strong); background: transparent; border-bottom-color: var(--gold-bg); font-weight: 700; }
+.icon-btn { border-radius: 10px; }
+.rank-chip { border-radius: 999px; font-weight: 600; }
+
+/* ---------- משטחים וכרטיסים ---------- */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: clamp(16px, 2.4vw, 24px); }
+a.card:hover, .part-card:hover, .today-card:hover { border-color: var(--gold-bg); transform: translateY(-2px); box-shadow: 0 8px 26px rgba(10, 30, 60, .12); }
+.part-card { border-inline-start-width: 4px; }
+.table-wrap, table { border-radius: 10px; }
+table { border-collapse: separate; border-spacing: 0; }
+th { background: var(--card2); color: var(--strong); font-weight: 700; }
+
+/* ---------- כפתורים ---------- */
+.btn { border-radius: 10px; font-weight: 700; background: var(--gold-bg); color: var(--on-gold); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.btn:hover { background: var(--gold-bg2); transform: none; }
+.btn.ghost { background: transparent; color: var(--strong); border: 1px solid var(--line); box-shadow: none; }
+.btn.ghost:hover { background: var(--card2); border-color: var(--muted); }
+.opt { border-radius: 10px; }
+
+/* ---------- גיבור בדף הבית ---------- */
+.hero { background: linear-gradient(135deg, #0a2540 0%, #0f3d5e 55%, #0f766e 130%); color: #eaf3fb; border: 0; padding: clamp(24px, 4vw, 44px); box-shadow: 0 10px 30px rgba(10, 37, 64, .25); }
+.hero h1, .hero h2 { color: #fff; border: 0; display: block; }
+.hero h1 span { color: #7ef0dc; }
+.hero p, .hero .muted, .hero li { color: #d3e3f1; }
+.hero .btn { background: #fff; color: #0a2540; }
+.hero .btn.ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .45); }
+.hero .btn.ghost:hover { background: rgba(255, 255, 255, .12); }
+.hero a:not(.btn) { color: #9ff3e4; }
+.quote { background: rgba(255, 255, 255, .08); border-inline-start-color: #7ef0dc; color: #eaf3fb; }
+.hero .quote .who { color: #b7cbe0; }
+
+/* ---------- רצועת סטטיסטיקה ושורת "היום" ---------- */
+.stats-strip a { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 10px; }
+.stats-strip b { color: var(--strong); font-family: "Frank Ruhl Libre", "Heebo", serif; font-size: 1.35rem; }
+.today-row .card { height: 100%; }
+.today-card b { color: var(--strong); }
+.quick-links a { background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+.quick-links a:hover { border-color: var(--gold-bg); background: var(--card2); }
+
+/* ---------- אזורים צבעוניים שהיו זהובים ---------- */
+.hero-level { border: 1px solid var(--gold-bg); background: linear-gradient(135deg, color-mix(in srgb, var(--gold-bg) 10%, transparent), var(--card)); }
+.track[aria-pressed="true"] { border-color: var(--gold-bg); background: color-mix(in srgb, var(--gold-bg) 10%, var(--card)); }
+.news-lens { background: var(--card2); border-inline-start-color: var(--gold-bg); }
+.news-banner { border-color: var(--gold-bg); }
+
+/* ---------- ניווט תחתון ותחתית ---------- */
+.bottom-nav { background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -4px 18px rgba(0, 0, 0, .06); }
+.bottom-nav a[aria-current="page"], .bottom-nav a[aria-current="page"] span { color: var(--gold); font-weight: 700; }
+.footer { background: var(--bg2); border-top: 1px solid var(--line); }
+
+/* ---------- רוחב קריאה נוח ---------- */
+.lesson-body p, .lesson-body li { max-width: 72ch; }
+
+@media (max-width: 760px) {
+  h1 { font-size: 1.75rem; }
+  .topbar { gap: 8px; }
+  .brand-sub { display: none; }
+}
+
+/* שורת "היום": כרטיס החדשות לרוחב מלא, כרטיסים באותו גובה */
+.today-row > #newsTeaser { grid-column: 1 / -1; }
+.today-row > #newsTeaser .today-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.today-row > #newsTeaser .today-card b { display: inline; margin: 0; font-size: 1.05rem; }
+.today-row > div > .card, .today-row > .card { height: 100%; }
