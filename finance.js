@@ -56,6 +56,10 @@ Routes.finance = function () {
     </section>
 
     <div id="fnOut" class="mt" aria-live="polite"></div>
+    <section class="card mt no-print" aria-labelledby="fnH"><h2 id="fnH">🕒 מעקב לאורך זמן</h2>
+      <p class="small muted">שמרו תמונת מצב אחת לכמה חודשים כדי לראות אם המצב משתפר. התמונות נשמרות בדפדפן בלבד.</p>
+      <div class="row"><button class="btn" type="button" id="fnSnap">📌 שמור תמונת מצב להיום</button><button class="btn ghost" type="button" id="fnExport">⬇️ ייצוא (קובץ)</button><label class="btn ghost" for="fnImport">⬆️ ייבוא</label><input id="fnImport" type="file" accept="application/json" class="sr-only"></div>
+      <div id="fnHist" class="mt" aria-live="polite"></div></section>
     <div class="row mt no-print"><button class="btn" type="button" id="fnPrint">🖨️ הדפס / שמור כ-PDF</button><button class="btn ghost" type="button" id="fnReset">איפוס</button></div>
     <p class="small muted mt">התוכן לימודי בלבד ואינו ייעוץ השקעות, פנסיה, ביטוח או מס. החישובים מפושטים: ללא מס, אינפלציה ותנודתיות. להחלטות משמעותיות — התייעצו עם יועץ מורשה.</p>`;
 
@@ -119,6 +123,7 @@ Routes.finance = function () {
     const mNow = finMonths(nest, start, v.monthlyInvest, v.ret / 100 / 12), mUp = finMonths(nest, start, v.monthlyInvest + v.income * .1, v.ret / 100 / 12);
     const yr = m => m == null ? "מעל 100 שנה" : fmt(m / 12, 1) + " שנים";
 
+    window.__finLast = { netWorth, rate, efMonths: efHave, invested: v.invested, income: v.income, expenses: v.expenses, debt: v.debtHi + v.debtOther, liquid };
     out.innerHTML = `
       <section class="card" aria-labelledby="fnR1"><h2 id="fnR1">📊 תמונת מצב</h2>
         <div class="grid grid-3">${chips.map(c => `<div class="card center"><div class="small muted">${c[0]}</div><b class="${c[2]}" style="font-size:1.4rem">${c[1]}</b><div class="small muted">${c[3]}</div></div>`).join("")}</div>
@@ -138,7 +143,45 @@ Routes.finance = function () {
         <p class="small muted">ההקרנה ללא מס, אינפלציה ותנודתיות; בפועל התשואות משתנות משנה לשנה (ראו את סיכון הרצף בכלי התיק).</p>
       </section>`;
   }
+  // ----- היסטוריה -----
+  const HKEY = "ia-finance-history";
+  const loadH = () => { try { return JSON.parse(localStorage.getItem(HKEY)) || []; } catch (e) { return []; } };
+  const saveH = h => { try { localStorage.setItem(HKEY, JSON.stringify(h)); } catch (e) { /* ignore */ } };
+  function histChart(h) {
+    if (h.length < 2) return "";
+    const W = 640, Hh = 200, pad = 36, vals = h.map(x => x.netWorth), mn = Math.min(...vals, 0), mx = Math.max(...vals, 1);
+    const X = i => pad + i * (W - 2 * pad) / (h.length - 1), Y = v => Hh - pad - (v - mn) / (mx - mn || 1) * (Hh - 2 * pad);
+    return `<div dir="ltr"><svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="גרף שווי נקי לאורך זמן" style="width:100%;height:auto;max-width:720px;background:var(--card2);border-radius:10px">
+      <polyline points="${h.map((x, i) => X(i).toFixed(1) + "," + Y(x.netWorth).toFixed(1)).join(" ")}" fill="none" style="stroke:var(--green)" stroke-width="2.5"/>
+      ${h.map((x, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(x.netWorth).toFixed(1)}" r="4" style="fill:var(--green)"/>`).join("")}
+      <text x="${pad}" y="16" font-size="11" style="fill:var(--muted)">net worth over time</text></svg></div>`;
+  }
+  function renderHist() {
+    const h = loadH(), el = $v("fnHist");
+    if (!h.length) { el.innerHTML = '<p class="muted">עדיין לא נשמרו תמונות. לחצו "שמור תמונת מצב" אחרי שמילאתם את הפרטים.</p>'; return; }
+    const arrow = (a, b, goodUp = true) => { if (b == null) return ""; const d = a - b; if (Math.abs(d) < 1e-9) return " ="; return (d > 0) === goodUp ? ' <span class="good">▲</span>' : ' <span class="bad">▼</span>'; };
+    const rows = h.map((x, i) => { const p = h[i - 1]; return `<tr><th scope="row">${esc(x.date)}</th><td>${fmt(x.netWorth)} ₪${p ? arrow(x.netWorth, p.netWorth) : ""}</td><td>${fmt(x.rate * 100, 1)}%${p ? arrow(x.rate, p.rate) : ""}</td><td>${fmt(x.efMonths, 1)}${p ? arrow(x.efMonths, p.efMonths) : ""}</td><td>${fmt(x.debt)} ₪${p ? arrow(x.debt, p.debt, false) : ""}</td><td><button type="button" class="btn ghost small" data-del="${i}" aria-label="מחק תמונה מ-${esc(x.date)}">מחק</button></td></tr>`; }).join("");
+    const first = h[0], last = h[h.length - 1];
+    el.innerHTML = histChart(h) + `<div class="table-wrap"><table><caption class="sr-only">היסטוריית תמונות מצב</caption><thead><tr><th scope="col">תאריך</th><th scope="col">שווי נקי</th><th scope="col">שיעור חיסכון</th><th scope="col">כרית (חודשים)</th><th scope="col">חובות</th><th scope="col"></th></tr></thead><tbody>${rows}</tbody></table></div>` +
+      (h.length > 1 ? `<p>מאז ${esc(first.date)}: שווי נקי ${last.netWorth >= first.netWorth ? "עלה" : "ירד"} ב-${fmt(Math.abs(last.netWorth - first.netWorth))} ₪.</p>` : "");
+    el.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const hh = loadH(); hh.splice(+b.dataset.del, 1); saveH(hh); renderHist(); });
+  }
+  $v("fnSnap").onclick = () => {
+    const m = window.__finLast; if (!m) return toast("מלאו קודם הכנסה");
+    const h = loadH(), d = new Date(), date = d.toLocaleDateString("he-IL");
+    h.push({ date, netWorth: Math.round(m.netWorth), rate: +m.rate.toFixed(4), efMonths: +m.efMonths.toFixed(2), debt: Math.round(m.debt), invested: Math.round(m.invested), income: Math.round(m.income), expenses: Math.round(m.expenses) });
+    saveH(h.slice(-24)); renderHist(); toast("תמונת המצב נשמרה");
+  };
+  $v("fnExport").onclick = () => {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify({ profile: read(), history: loadH() }, null, 1)], { type: "application/json" })); a.download = "finance-snapshots.json"; a.click();
+  };
+  $v("fnImport").onchange = e => {
+    const f = e.target.files[0]; if (!f) return; const rd = new FileReader();
+    rd.onload = () => { try { const j = JSON.parse(rd.result); if (Array.isArray(j.history)) saveH(j.history.slice(-24)); if (j.profile) { localStorage.setItem(FIN_KEY, JSON.stringify(j.profile)); } toast("יובא בהצלחה"); Routes.finance(); } catch (err) { toast("הקובץ אינו תקין"); } };
+    rd.readAsText(f);
+  };
   Object.values(ids).forEach(id => $v(id).addEventListener("input", render));
+  renderHist();
   $v("fnPrint").onclick = () => window.print();
   $v("fnReset").onclick = () => { localStorage.removeItem(FIN_KEY); Routes.finance(); };
   render();
