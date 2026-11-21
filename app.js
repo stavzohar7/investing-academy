@@ -213,7 +213,8 @@ Routes.lesson = function (id) {
         <a class="btn ghost small" href="#notesBox">✏️ ההערות שלי</a>
       </div>
       <div class="lesson-body" id="lessonBody">${L.body}</div>
-      <section class="takeaways" aria-labelledby="tkTitle"><h2 id="tkTitle">✨ נקודות מפתח</h2><ul>${L.takeaways.map(t => `<li>${esc(t)}</li>`).join("")}</ul></section>
+      <section class="takeaways" aria-labelledby="tkTitle"><h2 id="tkTitle">📌 סיכום השיעור</h2><ul>${L.takeaways.map(t => `<li>${esc(t)}</li>`).join("")}</ul></section>
+      ${L.practical ? `<section class="card practical" aria-labelledby="prTitle"><h2 id="prTitle">🛠️ מה עושים בפועל</h2><p class="small muted">משימות קצרות שהופכות את השיעור למעשה:</p><ol>${L.practical.map(t => `<li>${esc(t)}</li>`).join("")}</ol></section>` : ""}
 
       <section class="quiz" id="quiz" aria-labelledby="quizTitle" tabindex="-1">
         <h2 id="quizTitle">📝 בוחן</h2>

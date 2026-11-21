@@ -25,7 +25,8 @@ function buildSlides(L) {
     title: s.title, html: s.nodes.map(n => n.outerHTML || esc(n.textContent)).join(""),
     text: (s.intro ? s.title + ". " : s.title + ". ") + s.nodes.map(narr).filter(Boolean).join(". ")
   }));
-  slides.push({ title: "נקודות מפתח", html: "<ul>" + L.takeaways.map(t => `<li>${esc(t)}</li>`).join("") + "</ul>", text: "נקודות מפתח. " + L.takeaways.join(". ") });
+  if (L.practical) slides.push({ title: "מה עושים בפועל", html: "<ol>" + L.practical.map(t => `<li>${esc(t)}</li>`).join("") + "</ol>", text: "מה עושים בפועל. " + L.practical.join(". ") });
+  slides.push({ title: "סיכום השיעור", html: "<ul>" + L.takeaways.map(t => `<li>${esc(t)}</li>`).join("") + "</ul>", text: "נקודות מפתח. " + L.takeaways.join(". ") });
   return slides;
 }
 
@@ -121,11 +122,11 @@ Routes.watch = function () {
 
 // ===================== תסריטים לסרטונים =====================
 TITLES.scripts = "תסריטים לסרטוני שיעור";
-function lessonScript(L) {
-  if (window.HAND_SCRIPTS && HAND_SCRIPTS[L.id]) return HAND_SCRIPTS[L.id];
+function lessonScriptAuto(L) {
   const slides = buildSlides(L);
   const sentences = t => (t.match(/[^.!?\n]+[.!?]?/g) || [t]).map(s => s.trim()).filter(s => s.length > 3);
   const parts = slides.map((s, i) => {
+    if (i === slides.length - 2 && L.practical) return "מה עושים בפועל:\n" + L.practical.map((t, k) => `${k + 1}. ${t}`).join("\n");
     if (i === slides.length - 1) return "סיכום — נקודות המפתח:\n" + L.takeaways.map((t, k) => `${k + 1}. ${t}`).join("\n");
     const body = sentences(s.text.slice(s.title.length + 1)).slice(0, 3).join(" ");
     return `${i === 0 ? "פתיחה" : s.title}:\n${body}`;
@@ -136,7 +137,7 @@ Routes.scripts = function () {
   app().innerHTML = `<h1>📜 תסריטים לסרטוני שיעור</h1>
     <p class="muted">טיוטות תסריט לכל שיעור, שנבנו אוטומטית מתוכן השיעור (פתיחה, שלושת המשפטים הראשונים בכל חלק, וסיכום). הן נועדו להדבקה בכלי להפקת סרטון עם דמות מדברת. <b>עברו עליהן לפני ההפקה</b> — טבלאות ומספרים כדאי לוודא מול השיעור המלא.</p>
     <p><button type="button" class="btn" id="dlAll">⬇️ הורד את כל התסריטים (קובץ טקסט)</button></p>
-    ${CURRICULUM.map(l => `<section class="card mb"><h2>${l.icon || ""} ${esc(l.title)}</h2>${l.lessons.map(s => `<details><summary>${esc(s.title)}${window.HAND_SCRIPTS && HAND_SCRIPTS[s.id] ? ' <span class="pill green">✍️ תסריט ערוך</span>' : ''}</summary><pre class="script" dir="rtl">${esc(lessonScript(Object.assign({ levelIcon: l.icon }, s)))}</pre><button type="button" class="btn ghost small" data-copy="${s.id}">העתק תסריט</button></details>`).join("")}</section>`).join("")}`;
+    ${CURRICULUM.map(l => `<section class="card mb"><h2>${l.icon || ""} ${esc(l.title)}</h2>${l.lessons.map(s => `<details><summary>${esc(s.title)}${window.HAND_SCRIPTS && (s.parts || [s.id]).every(i => HAND_SCRIPTS[i]) ? ' <span class="pill green">✍️ תסריט ערוך</span>' : ''}</summary><pre class="script" dir="rtl">${esc(lessonScript(Object.assign({ levelIcon: l.icon }, s)))}</pre><button type="button" class="btn ghost small" data-copy="${s.id}">העתק תסריט</button></details>`).join("")}</section>`).join("")}`;
   $$("[data-copy]").forEach(b => b.onclick = () => {
     const L = ALL_LESSONS().find(x => x.id === b.dataset.copy);
     (navigator.clipboard ? navigator.clipboard.writeText(lessonScript(L)) : Promise.reject()).then(() => toast("התסריט הועתק"), () => toast("ההעתקה נכשלה — סמן והעתק ידנית"));
@@ -146,3 +147,11 @@ Routes.scripts = function () {
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], { type: "text/plain;charset=utf-8" })); a.download = "video-scripts.txt"; a.click();
   };
 };
+
+function lessonScript(L) {
+  const H = window.HAND_SCRIPTS || {}, ids = L.parts || [L.id], hs = ids.filter(i => H[i]);
+  const hand = hs.map(i => H[i]).join("\n\n==========\n\n");
+  if (hs.length === ids.length) return hand;
+  const auto = lessonScriptAuto(L);
+  return hs.length ? hand + "\n\n==========\n\n[טיוטה אוטומטית לכל השיעור המאוחד — החלקים שלא נערכו ידנית]\n\n" + auto : auto;
+}
