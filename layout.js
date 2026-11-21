@@ -69,7 +69,7 @@ Routes.home = function () {
 
   <h2 class="mt">כלים מהירים</h2>
   <div class="quick-links">
-    ${[["🧮", "מחשבון DCF", "tools/dcf"], ["📏", "גודל פוזיציה", "tools/position"], ["🔬", "מנתח יחסים", "tools/ratios"], ["🎯", "סימולטור סווינג", "simulator"], ["✅", "צ'קליסט באפט", "checklist"], ["👁️", "רשימת מעקב", "watchlist"], ["🕵️", "בלש הדוחות", "detective"], ["🤔", "מה באפט היה עושה?", "scenarios"], ["🕰️", "מכונת הזמן", "timemachine"], ["📐", "דף נוסחאות", "formulas"], ["🧭", "כל האתר", "sitemap"]]
+    ${[["🧮", "מחשבון DCF", "tools/dcf"], ["📏", "גודל פוזיציה", "tools/position"], ["🔬", "מנתח יחסים", "tools/ratios"], ["💼", "מבחן קיצון לתיק", "portfolio", "הקצאה, תרחיש ירידה וכלל איזון"], ["🎯", "סימולטור סווינג", "simulator"], ["✅", "צ'קליסט באפט", "checklist"], ["👁️", "רשימת מעקב", "watchlist"], ["🕵️", "בלש הדוחות", "detective"], ["🤔", "מה באפט היה עושה?", "scenarios"], ["🕰️", "מכונת הזמן", "timemachine"], ["📐", "דף נוסחאות", "formulas"], ["🧭", "כל האתר", "sitemap"]]
       .map(t => `<a href="#${t[2]}"><span aria-hidden="true">${t[0]}</span> ${t[1]}</a>`).join("")}
   </div>
 
