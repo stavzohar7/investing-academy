@@ -18,7 +18,7 @@ function buildSlides(L) {
   const clean = s => s.replace(/[←→↑↓]/g, " ").replace(/\s+/g, " ").trim();
   const narr = n => {
     if (n.nodeType !== 1) return clean(n.textContent);
-    if (n.tagName === "TABLE") return [...n.querySelectorAll("tr")].map(r => clean([...r.children].map(c => c.textContent).join(", "))).join(". ");
+    if (n.tagName === "TABLE") return "הנתונים מוצגים בטבלה שעל המסך";
     return clean(n.textContent);
   };
   const slides = raw.filter(s => s.nodes.length).map(s => ({
@@ -29,6 +29,10 @@ function buildSlides(L) {
   return slides;
 }
 
+function videoBlock(v) {
+  const el = v.yt ? `<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.yt)}" title="סרטון השיעור" allowfullscreen loading="lazy" style="width:100%;aspect-ratio:16/9;border:0;border-radius:12px"></iframe>` : `<video controls preload="none" src="${esc(v.src)}" style="width:100%;border-radius:12px"></video>`;
+  return `<section class="card mb"><h2 style="margin-top:0">🎥 סרטון השיעור</h2>${el}</section>`;
+}
 Routes.present = function (id) {
   const L = ALL_LESSONS().find(x => x.id === resolveLessonId(id));
   if (!L) { Routes.watch(); return; }
@@ -43,6 +47,7 @@ Routes.present = function (id) {
 
   app().innerHTML = `
     <p class="small"><a href="#lesson/${esc(id)}">← לשיעור הכתוב</a> · <a href="#watch">כל השיעורים המוקרנים</a></p>
+    ${(window.LESSON_VIDEOS || {})[id] ? videoBlock((window.LESSON_VIDEOS || {})[id]) : ""}
     <section class="pstage card" id="stage" aria-label="שיעור מוקרן: ${esc(L.title)}">
       <div class="stage-top"><span class="avatar" id="avatar" aria-hidden="true">🎙️</span><div><div class="small muted" id="stageCount"></div><h1 id="stageTitle" class="stage-h"></h1></div></div>
       <div class="stage-body lesson-body" id="stageBody" tabindex="0"></div>
@@ -112,4 +117,31 @@ Routes.watch = function () {
   app().innerHTML = `<h1>🎬 קורס מוקרן</h1>
     <p class="muted">כל שיעור כמצגת עם קריינות קולית וכתוביות, כדי ללמוד בנסיעה, בהליכה או בלי לקרוא. ההקראה נעשית במכשיר שלך (קול עברי של הדפדפן) — זו לא הקלטה, ואיכותה תלויה במכשיר.</p>
     ${CURRICULUM.map(l => `<section class="card mb"><h2>${l.icon || ""} ${esc(l.title)}</h2><ul class="watch-list">${l.lessons.map(s => `<li><a href="#present/${s.id}">▶ ${esc(s.title)}</a> <span class="small muted">· כ-${mins(s)} דק׳</span></li>`).join("")}</ul></section>`).join("")}`;
+};
+
+// ===================== תסריטים לסרטונים =====================
+TITLES.scripts = "תסריטים לסרטוני שיעור";
+function lessonScript(L) {
+  const slides = buildSlides(L);
+  const sentences = t => (t.match(/[^.!?\n]+[.!?]?/g) || [t]).map(s => s.trim()).filter(s => s.length > 3);
+  const parts = slides.map((s, i) => {
+    if (i === slides.length - 1) return "סיכום — נקודות המפתח:\n" + L.takeaways.map((t, k) => `${k + 1}. ${t}`).join("\n");
+    const body = sentences(s.text.slice(s.title.length + 1)).slice(0, 3).join(" ");
+    return `${i === 0 ? "פתיחה" : s.title}:\n${body}`;
+  });
+  return `שיעור: ${L.title}\nמשך מוערך: כ-${Math.max(2, Math.round(parts.join(" ").split(/\s+/).length / 130))} דקות\n\n` + parts.join("\n\n") + "\n\nסיום: בדקו את עצמכם בבוחן שבסוף השיעור באתר. התוכן לימודי בלבד ואינו ייעוץ השקעות.";
+}
+Routes.scripts = function () {
+  app().innerHTML = `<h1>📜 תסריטים לסרטוני שיעור</h1>
+    <p class="muted">טיוטות תסריט לכל שיעור, שנבנו אוטומטית מתוכן השיעור (פתיחה, שלושת המשפטים הראשונים בכל חלק, וסיכום). הן נועדו להדבקה בכלי להפקת סרטון עם דמות מדברת. <b>עברו עליהן לפני ההפקה</b> — טבלאות ומספרים כדאי לוודא מול השיעור המלא.</p>
+    <p><button type="button" class="btn" id="dlAll">⬇️ הורד את כל התסריטים (קובץ טקסט)</button></p>
+    ${CURRICULUM.map(l => `<section class="card mb"><h2>${l.icon || ""} ${esc(l.title)}</h2>${l.lessons.map(s => `<details><summary>${esc(s.title)}</summary><pre class="script" dir="rtl">${esc(lessonScript(Object.assign({ levelIcon: l.icon }, s)))}</pre><button type="button" class="btn ghost small" data-copy="${s.id}">העתק תסריט</button></details>`).join("")}</section>`).join("")}`;
+  $$("[data-copy]").forEach(b => b.onclick = () => {
+    const L = ALL_LESSONS().find(x => x.id === b.dataset.copy);
+    (navigator.clipboard ? navigator.clipboard.writeText(lessonScript(L)) : Promise.reject()).then(() => toast("התסריט הועתק"), () => toast("ההעתקה נכשלה — סמן והעתק ידנית"));
+  });
+  $("#dlAll").onclick = () => {
+    const txt = ALL_LESSONS().map(L => lessonScript(L)).join("\n\n==========\n\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], { type: "text/plain;charset=utf-8" })); a.download = "video-scripts.txt"; a.click();
+  };
 };
