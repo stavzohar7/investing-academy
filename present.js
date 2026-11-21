@@ -122,6 +122,7 @@ Routes.watch = function () {
 // ===================== תסריטים לסרטונים =====================
 TITLES.scripts = "תסריטים לסרטוני שיעור";
 function lessonScript(L) {
+  if (window.HAND_SCRIPTS && HAND_SCRIPTS[L.id]) return HAND_SCRIPTS[L.id];
   const slides = buildSlides(L);
   const sentences = t => (t.match(/[^.!?\n]+[.!?]?/g) || [t]).map(s => s.trim()).filter(s => s.length > 3);
   const parts = slides.map((s, i) => {
@@ -135,7 +136,7 @@ Routes.scripts = function () {
   app().innerHTML = `<h1>📜 תסריטים לסרטוני שיעור</h1>
     <p class="muted">טיוטות תסריט לכל שיעור, שנבנו אוטומטית מתוכן השיעור (פתיחה, שלושת המשפטים הראשונים בכל חלק, וסיכום). הן נועדו להדבקה בכלי להפקת סרטון עם דמות מדברת. <b>עברו עליהן לפני ההפקה</b> — טבלאות ומספרים כדאי לוודא מול השיעור המלא.</p>
     <p><button type="button" class="btn" id="dlAll">⬇️ הורד את כל התסריטים (קובץ טקסט)</button></p>
-    ${CURRICULUM.map(l => `<section class="card mb"><h2>${l.icon || ""} ${esc(l.title)}</h2>${l.lessons.map(s => `<details><summary>${esc(s.title)}</summary><pre class="script" dir="rtl">${esc(lessonScript(Object.assign({ levelIcon: l.icon }, s)))}</pre><button type="button" class="btn ghost small" data-copy="${s.id}">העתק תסריט</button></details>`).join("")}</section>`).join("")}`;
+    ${CURRICULUM.map(l => `<section class="card mb"><h2>${l.icon || ""} ${esc(l.title)}</h2>${l.lessons.map(s => `<details><summary>${esc(s.title)}${window.HAND_SCRIPTS && HAND_SCRIPTS[s.id] ? ' <span class="pill green">✍️ תסריט ערוך</span>' : ''}</summary><pre class="script" dir="rtl">${esc(lessonScript(Object.assign({ levelIcon: l.icon }, s)))}</pre><button type="button" class="btn ghost small" data-copy="${s.id}">העתק תסריט</button></details>`).join("")}</section>`).join("")}`;
   $$("[data-copy]").forEach(b => b.onclick = () => {
     const L = ALL_LESSONS().find(x => x.id === b.dataset.copy);
     (navigator.clipboard ? navigator.clipboard.writeText(lessonScript(L)) : Promise.reject()).then(() => toast("התסריט הועתק"), () => toast("ההעתקה נכשלה — סמן והעתק ידנית"));
