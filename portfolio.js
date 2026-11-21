@@ -53,6 +53,16 @@ Routes.portfolio = function () {
       </div>
       <div id="pjRes" aria-live="polite"></div>
     </section>
+    <section class="card mt" aria-labelledby="pqT">
+      <h2 id="pqT">🎲 סיכון הרצף: אותן תשואות, סדר אחר</h2>
+      <p class="small muted">20 שנות תשואה בדיוניות, זהות בשני המקרים — כולל שנה אחת של −30%. ההבדל היחיד: מתי השנה הגרועה מגיעה (בשנה 1 או בשנה 20). בדקו מה קורה כשמפקידים, כשמושכים כסף, וכשלא עושים כלום.</p>
+      <div class="grid grid-3">
+        <div class="field"><label for="pqMode">מצב</label><select id="pqMode"><option value="none">ללא הפקדות או משיכות</option><option value="in">הפקדה שנתית</option><option value="out">משיכה שנתית (פרישה)</option></select></div>
+        <div class="field"><label for="pqAmt">סכום שנתי (₪)</label><input id="pqAmt" type="number" inputmode="numeric" min="0" step="1000"></div>
+        <div class="field"><label for="pqStart">שווי התחלתי (₪)</label><input id="pqStart" type="number" inputmode="numeric" min="0" step="1000"></div>
+      </div>
+      <div id="pqRes" aria-live="polite"></div>
+    </section>
     <p class="small muted">התוכן לימודי בלבד ואינו ייעוץ השקעות. מכירה לצורך איזון עשויה ליצור אירוע מס — בדקו לפני פעולה.</p>`;
 
   const $v = id => document.getElementById(id);
@@ -135,6 +145,44 @@ Routes.portfolio = function () {
   }
   Object.values(pjIds).forEach(id => $v(id).addEventListener("input", project));
   project();
+
+  // ----- סיכון הרצף -----
+  const PQ_R = [-30, 8, 12, 10, 7, 15, -10, 9, 11, 14, 6, 12, 8, -5, 13, 10, 9, 7, 16, 11];
+  const PQ_A = PQ_R.slice(), PQ_B = PQ_R.slice(1).concat(PQ_R[0]);
+  $v("pqMode").value = "out"; $v("pqAmt").value = 16000; $v("pqStart").value = 400000;
+  const pqRun = (seq, start, flow) => { let v = start; const out = [v]; for (const r of seq) { v = Math.max(0, (v + flow) * (1 + r / 100)); out.push(v); } return out; };
+  function seqRisk() {
+    const mode = $v("pqMode").value, amt = Math.max(0, +$v("pqAmt").value || 0), start = Math.max(0, +$v("pqStart").value || 0);
+    const flow = mode === "in" ? amt : mode === "out" ? -amt : 0;
+    const a = pqRun(PQ_A, start, flow), b = pqRun(PQ_B, start, flow);
+    const W = 640, H = 240, pad = 36, max = Math.max(...a, ...b, 1);
+    const X = i => pad + i * (W - 2 * pad) / 20, Y = v => H - pad - v / max * (H - 2 * pad);
+    const line = arr => arr.map((v, i) => X(i).toFixed(1) + "," + Y(v).toFixed(1)).join(" ");
+    const msg = mode === "out"
+      ? "במשיכה, שנה גרועה בהתחלה פוגעת הכי הרבה: מוכרים יחידות במחיר נמוך, ויש פחות כסף שיכול להתאושש. זה סיכון הרצף."
+      : mode === "in"
+        ? "בהפקדה, שנה גרועה בהתחלה דווקא עוזרת: כל הפקדה אחריה קונה במחיר נמוך. שנה גרועה בסוף — כשהתיק גדול — פוגעת יותר."
+        : "בלי הפקדות או משיכות הסדר לא משנה: מכפלת התשואות זהה, ולכן השווי זהה.";
+    $v("pqRes").innerHTML = `
+      <div dir="ltr"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="גרף שני רצפי תשואה זהים בסדר שונה: הירידה בשנה הראשונה או בשנה האחרונה" style="width:100%;height:auto;max-width:720px;background:var(--card2);border-radius:10px">
+        <polyline points="${line(b)}" fill="none" style="stroke:var(--green)" stroke-width="2.5"/>
+        <polyline points="${line(a)}" fill="none" style="stroke:var(--red)" stroke-width="2.5"/>
+        <text x="${pad}" y="16" font-size="11" style="fill:var(--red)">red: -30% in year 1</text>
+        <text x="${pad + 130}" y="16" font-size="11" style="fill:var(--green)">green: -30% in year 20</text>
+        <text x="${pad}" y="${H - 10}" font-size="11" style="fill:var(--muted)">year 0</text>
+        <text x="${W - pad - 40}" y="${H - 10}" font-size="11" style="fill:var(--muted)">year 20</text>
+      </svg></div>
+      <div class="table-wrap"><table><caption class="sr-only">ערכי סוף ושפל</caption>
+        <thead><tr><th scope="col">רצף</th><th scope="col">שווי אחרי 20 שנה</th><th scope="col">השווי הנמוך ביותר בדרך</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">ירידה של 30% בשנה 1</th><td>${fmt(a[20])} ₪</td><td>${fmt(Math.min(...a))} ₪</td></tr>
+          <tr><th scope="row">ירידה של 30% בשנה 20</th><td>${fmt(b[20])} ₪</td><td>${fmt(Math.min(...b))} ₪</td></tr>
+        </tbody></table></div>
+      <p>${msg}</p>
+      <p class="small muted">התשואה הממוצעת בדוגמה כ-6.65% בשנה (גיאומטרית כ-6.0%). התשואות בדיוניות ואינן תחזית.</p>`;
+  }
+  ["pqMode", "pqAmt", "pqStart"].forEach(id => $v(id).addEventListener("input", seqRisk));
+  seqRisk();
 
   $v("pfPreset").onchange = e => { const p = PF_PRESETS[e.target.value]; if (p.s) p.s.forEach((x, i) => $v("pfS" + i).value = x); calc(); };
   PF_ASSETS.forEach((_, i) => { $v("pfS" + i).addEventListener("input", () => { $v("pfPreset").value = "custom"; calc(); }); $v("pfA" + i).addEventListener("input", calc); });
