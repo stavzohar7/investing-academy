@@ -17,7 +17,7 @@ function loadWeekly(id, cb) {
   document.body.appendChild(s);
 }
 
-const lessonTitle = id => { const l = ALL_LESSONS().find(x => x.id === id); return l ? `${l.levelIcon} ${l.title}` : id; };
+const lessonTitle = id => { const l = ALL_LESSONS().find(x => x.id === resolveLessonId(id)); return l ? `${l.levelIcon} ${l.title}` : id; };
 
 // פס טווח השווי: פסימי / בסיס / אופטימי מול המחיר הנוכחי
 function valueBar(sc, price) {

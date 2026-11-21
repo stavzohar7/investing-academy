@@ -152,6 +152,7 @@ let firstRoute = true;
 function router() {
   const h = location.hash.replace(/^#\/?/, "") || "home";
   const [page, ...rest] = h.split("/");
+  if ((page === "lesson" || page === "present") && window.LESSON_ALIAS && window.LESSON_ALIAS[rest[0]]) { rest[0] = window.LESSON_ALIAS[rest[0]]; history.replaceState(null, "", "#" + page + "/" + rest[0]); }
   const grp = groupOf(page, h);
   const navPage = page === "lesson" ? "path" : grp ? grp.nav : page;
   $$(".nav a, .bottom-nav a").forEach(a => a.dataset.page === navPage ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
@@ -422,7 +423,7 @@ function drawCards() {
 // ---------- boot ----------
 window.addEventListener("hashchange", router);
 window.addEventListener("load", () => {
-  State.load();
+  State.load(); if (window.migrateMerged) migrateMerged();
   setupPrefs();
   // כפתור חזרה למעלה
   const top = $("#toTop");

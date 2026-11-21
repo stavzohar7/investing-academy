@@ -30,7 +30,7 @@ function buildSlides(L) {
 }
 
 Routes.present = function (id) {
-  const L = ALL_LESSONS().find(x => x.id === id);
+  const L = ALL_LESSONS().find(x => x.id === resolveLessonId(id));
   if (!L) { Routes.watch(); return; }
   document.title = `🎬 ${L.title} — אקדמיית המשקיע`;
   const slides = buildSlides(L);

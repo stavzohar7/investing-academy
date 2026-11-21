@@ -108,7 +108,7 @@ Routes.style = function () {
         <section class="card tm-card"><div style="font-size:3rem" class="center" aria-hidden="true">${top.icon}</div>
           <h2 tabindex="-1" id="styRes" class="center">${top.name}</h2><p>${top.desc}</p>
           <p><b>סגנון משני:</b> ${second.icon} ${second.name}</p>
-          <p><b>לקריאה:</b> ${top.study.map(id => { const l = ALL_LESSONS().find(x => x.id === id); return l ? `<a href="#lesson/${id}">${esc(l.title)}</a>` : ""; }).filter(Boolean).join(" · ")}</p>
+          <p><b>לקריאה:</b> ${top.study.map(id => { const l = ALL_LESSONS().find(x => x.id === resolveLessonId(id)); return l ? `<a href="#lesson/${id}">${esc(l.title)}</a>` : ""; }).filter(Boolean).join(" · ")}</p>
           <p class="small muted">זה כלי לימודי לחשיבה על ההעדפות שלך — לא המלצה ולא ייעוץ מותאם אישית. אפשר, ולרוב כדאי, לשלב בין סגנונות. התוצאה מתבססת רק על שמונה שאלות.</p>
           <button type="button" class="btn" onclick="Routes.style()">מחדש ←</button></section>`;
       $("#styRes").focus(); return;
