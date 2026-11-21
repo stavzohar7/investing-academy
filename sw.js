@@ -1,12 +1,12 @@
 // Service Worker — מאפשר להתקין את האפליקציה ולהשתמש בה גם בלי אינטרנט.
 // אסטרטגיה: "רשת קודם" — כשיש אינטרנט תמיד מקבלים את הגרסה העדכנית (כולל דוחות שבועיים חדשים),
 // וכשאין — מגישים את העותק השמור.
-const CACHE = "investing-academy-v15";
+const CACHE = "investing-academy-v17";
 const CORE = [
   "./", "index.html", "styles.css", "theme.css", "manifest.webmanifest", "icon.svg",
   "content.js", "content2.js", "content3.js", "content4.js", "content5.js", "content6.js",
   "content7.js", "content8.js", "content9.js", "content10.js", "content11.js", "content12.js", "content13.js", "content14.js", "content15.js", "content16.js", "content17.js", "content18.js",
-  "glossary.js", "app.js", "tools.js", "weekly.js", "library.js", "practice.js", "extras.js", "lab.js", "hub.js", "play.js", "course.js", "parts.js", "weekly-tech.js", "layout.js", "trust.js", "news.js", "creative.js", "daily/manifest.js", "daily/2026-11-20.js", "daily/2026-11-19.js", "daily/2026-11-18.js", "daily/2026-11-17.js",
+  "glossary.js", "app.js", "tools.js", "weekly.js", "library.js", "practice.js", "extras.js", "lab.js", "hub.js", "play.js", "course.js", "parts.js", "weekly-tech.js", "layout.js", "trust.js", "news.js", "creative.js", "present.js", "daily/manifest.js", "daily/2026-11-20.js", "daily/2026-11-19.js", "daily/2026-11-18.js", "daily/2026-11-17.js",
   "weekly/manifest.js", "weekly/scorecard.js"
 ];
 

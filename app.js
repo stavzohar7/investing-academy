@@ -207,6 +207,7 @@ Routes.lesson = function (id) {
       </div>
       <div class="lesson-tools mb">
         <button class="btn ghost small" type="button" id="speakBtn" aria-pressed="false">🔊 הקרא לי</button>
+        <a class="btn small" href="#present/${L.id}">🎬 צפה כמצגת מוקרנת</a>
         <a class="btn ghost small" href="#quiz">📝 קפוץ לבוחן</a>
         <a class="btn ghost small" href="#notesBox">✏️ ההערות שלי</a>
       </div>

@@ -105,3 +105,26 @@ th { background: var(--card2); color: var(--strong); font-weight: 700; }
 .today-row > #newsTeaser .today-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .today-row > #newsTeaser .today-card b { display: inline; margin: 0; font-size: 1.05rem; }
 .today-row > div > .card, .today-row > .card { height: 100%; }
+
+/* ===== שיעור מוקרן ===== */
+.pstage { padding: clamp(16px, 3vw, 32px); background: linear-gradient(160deg, #0a2540, #0f3d5e 70%); color: #eaf3fb; border: 0; }
+.pstage a:not(.btn) { color: #9ff3e4; }
+.pstage .btn { background: #fff; color: #0a2540; }
+.pstage .stage-top .muted, .pstage .controls .small, .pstage > .small { color: #c4d6e8; }
+.pstage .btn.ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.45); }
+.stage-top { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.stage-h { color: #fff; border: 0; display: block; font-size: clamp(1.4rem, 3.2vw, 2.1rem); margin: 0; }
+.avatar { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 1.6rem; background: rgba(255,255,255,.12); flex: none; }
+.avatar.talk { animation: pres-pulse 1s ease-in-out infinite; box-shadow: 0 0 0 0 rgba(126,240,220,.6); }
+@keyframes pres-pulse { 0% { box-shadow: 0 0 0 0 rgba(126,240,220,.55); } 100% { box-shadow: 0 0 0 16px rgba(126,240,220,0); } }
+.stage-body { background: var(--card); color: var(--text); border-radius: 12px; padding: clamp(14px, 2.4vw, 24px); max-height: 52vh; overflow: auto; font-size: 1.12rem; }
+.stage-body .btn { background: var(--gold-bg); color: var(--on-gold); }
+.stage-body .btn.ghost { color: var(--strong); border-color: var(--line); background: transparent; }
+.stage-body a:not(.btn) { color: var(--blue); }
+.caption { min-height: 2.8em; margin: 14px 0 8px; font-size: 1.1rem; text-align: center; color: #fff; }
+.pstage .progress { background: rgba(255,255,255,.18); }
+.controls { justify-content: center; margin-top: 12px; }
+.controls select { background: #fff; color: #0a2540; border-radius: 8px; padding: 6px; }
+.watch-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.watch-list a { text-decoration: none; font-weight: 500; }
+html.a11y-still .avatar.talk { animation: none; }
