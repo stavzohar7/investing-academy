@@ -40,6 +40,19 @@ Routes.portfolio = function () {
       </section>
     </div>
     <section class="card mt" aria-labelledby="pfOut" aria-live="polite"><h2 id="pfOut">תוצאות</h2><div id="pfRes"></div></section>
+    <section class="card mt" aria-labelledby="pfPj">
+      <h2 id="pfPj">📈 הקרנה ל-20 שנה: הפקדות ודמי ניהול</h2>
+      <p class="small muted">חישוב פשוט עם תשואה קבועה בשנה — מציאות לא נראית ככה. התשואה האמיתית משתנה משנה לשנה, ומה שנקבע לפי הדוגמה אינו תחזית. מטרת החישוב: להראות את כוחן של הפקדות ושל עלויות.</p>
+      <div class="grid grid-3">
+        <div class="field"><label for="pjStart">שווי התחלתי (₪)</label><input id="pjStart" type="number" inputmode="numeric" min="0" step="1000"></div>
+        <div class="field"><label for="pjContrib">הפקדה שנתית (₪)</label><input id="pjContrib" type="number" inputmode="numeric" min="0" step="1000"></div>
+        <div class="field"><label for="pjYears">שנים</label><input id="pjYears" type="number" inputmode="numeric" min="1" max="50" step="1"></div>
+        <div class="field"><label for="pjGross">תשואה ברוטו לשנה (%)</label><input id="pjGross" type="number" inputmode="decimal" min="-20" max="30" step="0.5"></div>
+        <div class="field"><label for="pjFeeA">דמי ניהול א׳ (%)</label><input id="pjFeeA" type="number" inputmode="decimal" min="0" max="5" step="0.05"></div>
+        <div class="field"><label for="pjFeeB">דמי ניהול ב׳ (%)</label><input id="pjFeeB" type="number" inputmode="decimal" min="0" max="5" step="0.05"></div>
+      </div>
+      <div id="pjRes" aria-live="polite"></div>
+    </section>
     <p class="small muted">התוכן לימודי בלבד ואינו ייעוץ השקעות. מכירה לצורך איזון עשויה ליצור אירוע מס — בדקו לפני פעולה.</p>`;
 
   const $v = id => document.getElementById(id);
@@ -81,6 +94,47 @@ Routes.portfolio = function () {
       <h3>שאלת המבחן</h3>
       <p>האם הייתם מסוגלים לראות את התיק יורד ${fmt(Math.max(0, loss) * 100, 1)}% ולהמשיך לפי התוכנית? אם לא — ההקצאה אגרסיבית מדי עבורכם, וכדאי לשנות אותה עכשיו, בראש שקט.</p>`;
   }
+
+  // ----- הקרנה ל-20 שנה -----
+  const PJ_KEY = "ia-portfolio-proj";
+  let pj = { start: 400000, contrib: 40000, years: 20, gross: 6, feeA: 0.1, feeB: 1 };
+  try { const s = JSON.parse(localStorage.getItem(PJ_KEY)); if (s) pj = Object.assign(pj, s); } catch (e) { /* ignore */ }
+  const pjIds = { start: "pjStart", contrib: "pjContrib", years: "pjYears", gross: "pjGross", feeA: "pjFeeA", feeB: "pjFeeB" };
+  Object.entries(pjIds).forEach(([k, id]) => { $v(id).value = pj[k]; });
+  const series = (p, fee) => { const out = [p.start]; let v = p.start; for (let y = 1; y <= p.years; y++) { v = (v + p.contrib) * (1 + (p.gross - fee) / 100); out.push(v); } return out; };
+  function project() {
+    const p = {}; Object.entries(pjIds).forEach(([k, id]) => { p[k] = +$v(id).value || 0; });
+    p.years = Math.min(50, Math.max(1, Math.round(p.years)));
+    try { localStorage.setItem(PJ_KEY, JSON.stringify(p)); } catch (e) { /* ignore */ }
+    const A = series(p, p.feeA), B = series(p, p.feeB);
+    const paid = Array.from({ length: p.years + 1 }, (_, y) => p.start + p.contrib * y);
+    const diff = A[p.years] - B[p.years], hi = Math.max(A[p.years], B[p.years]), diffPct = hi ? 1 - Math.min(A[p.years], B[p.years]) / hi : 0;
+    const W = 640, H = 260, pad = 36, max = Math.max(...A, ...B, 1);
+    const X = i => pad + i * (W - 2 * pad) / p.years, Y = v => H - pad - v / max * (H - 2 * pad);
+    const line = arr => arr.map((v, i) => X(i).toFixed(1) + "," + Y(v).toFixed(1)).join(" ");
+    $v("pjRes").innerHTML = `
+      <div dir="ltr"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="גרף הקרנה: שווי התיק לפי שנים, בשני מקרי דמי ניהול ובסכום ההפקדות" style="width:100%;height:auto;max-width:720px;background:var(--card2);border-radius:10px">
+        <polyline points="${line(paid)}" fill="none" style="stroke:var(--muted)" stroke-width="2" stroke-dasharray="5 4"/>
+        <polyline points="${line(B)}" fill="none" style="stroke:var(--red)" stroke-width="2.5"/>
+        <polyline points="${line(A)}" fill="none" style="stroke:var(--green)" stroke-width="2.5"/>
+        <text x="${pad}" y="16" font-size="11" style="fill:var(--green)">green: fee ${p.feeA}%</text>
+        <text x="${pad + 110}" y="16" font-size="11" style="fill:var(--red)">red: fee ${p.feeB}%</text>
+        <text x="${pad + 220}" y="16" font-size="11" style="fill:var(--muted)">dashed: total deposited</text>
+        <text x="${pad}" y="${H - 10}" font-size="11" style="fill:var(--muted)">year 0</text>
+        <text x="${W - pad - 40}" y="${H - 10}" font-size="11" style="fill:var(--muted)">year ${p.years}</text>
+      </svg></div>
+      <div class="table-wrap"><table><caption class="sr-only">ערכי סוף התקופה</caption>
+        <thead><tr><th scope="col">מקרה</th><th scope="col">שווי אחרי ${p.years} שנים</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">סך ההפקדות (כולל התחלה)</th><td>${fmt(paid[p.years])} ₪</td></tr>
+          <tr><th scope="row">דמי ניהול ${p.feeA}%</th><td>${fmt(A[p.years])} ₪</td></tr>
+          <tr><th scope="row">דמי ניהול ${p.feeB}%</th><td>${fmt(B[p.years])} ₪</td></tr>
+        </tbody></table></div>
+      <p>הפער בין שני המקרים: <b>${fmt(Math.abs(diff))} ₪</b> (התוצאה הנמוכה נמוכה ב-${fmt(diffPct * 100, 1)}% מהגבוהה) — רק בגלל עלות. ההפקדות והזמן הם הרוב; העלות היא החלק שאפשר לשלוט בו.</p>
+      <p class="small muted">נוסחה: כל שנה (שווי + הפקדה) × (1 + תשואה ברוטו − דמי ניהול). ללא מס, אינפלציה ותנודתיות.</p>`;
+  }
+  Object.values(pjIds).forEach(id => $v(id).addEventListener("input", project));
+  project();
 
   $v("pfPreset").onchange = e => { const p = PF_PRESETS[e.target.value]; if (p.s) p.s.forEach((x, i) => $v("pfS" + i).value = x); calc(); };
   PF_ASSETS.forEach((_, i) => { $v("pfS" + i).addEventListener("input", () => { $v("pfPreset").value = "custom"; calc(); }); $v("pfA" + i).addEventListener("input", calc); });
