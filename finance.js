@@ -56,6 +56,13 @@ Routes.finance = function () {
     </section>
 
     <div id="fnOut" class="mt" aria-live="polite"></div>
+    <section class="card mt no-print" aria-labelledby="fnPl"><h2 id="fnPl">🎯 התוכנית שלי ל-12 חודשים</h2>
+      <p class="small muted">בחרו עד שלושה יעדים. כל יעד נמדד מנקודת ההתחלה (היום) ליעד, ומשווים להתקדמות "הצפויה" אחרי הזמן שעבר. הנתונים הנוכחיים נלקחים מהטופס שלמעלה — עדכנו אותו מדי חודש.</p>
+      <div id="fnPlan" aria-live="polite"></div>
+      <div class="row mt"><div class="field"><label for="fnGType">יעד</label><select id="fnGType"><option value="ef">כרית ביטחון (חודשי הוצאות)</option><option value="debt">חובות יקרים (₪ שנשארו)</option><option value="rate">שיעור חיסכון (%)</option><option value="invest">הפקדה/השקעה חודשית (₪)</option><option value="nw">שווי נקי (₪)</option></select></div>
+        <div class="field"><label for="fnGTarget">ערך יעד</label><input id="fnGTarget" type="number" inputmode="decimal" step="any"></div>
+        <button class="btn" type="button" id="fnGAdd">הוסף יעד</button></div>
+    </section>
     <section class="card mt no-print" aria-labelledby="fnH"><h2 id="fnH">🕒 מעקב לאורך זמן</h2>
       <p class="small muted">שמרו תמונת מצב אחת לכמה חודשים כדי לראות אם המצב משתפר. התמונות נשמרות בדפדפן בלבד.</p>
       <div class="row"><button class="btn" type="button" id="fnSnap">📌 שמור תמונת מצב להיום</button><button class="btn ghost" type="button" id="fnExport">⬇️ ייצוא (קובץ)</button><label class="btn ghost" for="fnImport">⬆️ ייבוא</label><input id="fnImport" type="file" accept="application/json" class="sr-only"></div>
@@ -123,7 +130,7 @@ Routes.finance = function () {
     const mNow = finMonths(nest, start, v.monthlyInvest, v.ret / 100 / 12), mUp = finMonths(nest, start, v.monthlyInvest + v.income * .1, v.ret / 100 / 12);
     const yr = m => m == null ? "מעל 100 שנה" : fmt(m / 12, 1) + " שנים";
 
-    window.__finLast = { netWorth, rate, efMonths: efHave, invested: v.invested, income: v.income, expenses: v.expenses, debt: v.debtHi + v.debtOther, liquid };
+    window.__finLast = { netWorth, rate, efMonths: efHave, debtHi: v.debtHi, monthlyInvest: v.monthlyInvest, invested: v.invested, income: v.income, expenses: v.expenses, debt: v.debtHi + v.debtOther, liquid };
     out.innerHTML = `
       <section class="card" aria-labelledby="fnR1"><h2 id="fnR1">📊 תמונת מצב</h2>
         <div class="grid grid-3">${chips.map(c => `<div class="card center"><div class="small muted">${c[0]}</div><b class="${c[2]}" style="font-size:1.4rem">${c[1]}</b><div class="small muted">${c[3]}</div></div>`).join("")}</div>
@@ -142,7 +149,42 @@ Routes.finance = function () {
         ${v.kids > 0 ? `<p>👨‍👩‍👧 ${v.kids === 1 ? "יש ילד" : "יש " + v.kids + " ילדים"}: שקלו יעדים נפרדים (לימודים, התחלה עצמאית) וחשבו הפקדה במחשבון המטרות. <a href="#money/goal">למחשבון ←</a></p>` : ""}
         <p class="small muted">ההקרנה ללא מס, אינפלציה ותנודתיות; בפועל התשואות משתנות משנה לשנה (ראו את סיכון הרצף בכלי התיק).</p>
       </section>`;
+    if (typeof renderPlan === "function") renderPlan();
   }
+  // ----- תוכנית ל-12 חודשים -----
+  const PKEY = "ia-finance-plan";
+  const PLAN_TYPES = { ef: ["כרית ביטחון", "חודשים", m => m.efMonths, 1], debt: ["חובות יקרים", "₪", m => m.debtHi, 0], rate: ["שיעור חיסכון", "%", m => m.rate * 100, 1], invest: ["הפקדה חודשית", "₪", m => m.monthlyInvest, 0], nw: ["שווי נקי", "₪", m => m.netWorth, 0] };
+  const loadP = () => { try { return JSON.parse(localStorage.getItem(PKEY)) || { start: null, goals: [] }; } catch (e) { return { start: null, goals: [] }; } };
+  const saveP = p => { try { localStorage.setItem(PKEY, JSON.stringify(p)); } catch (e) { /* ignore */ } };
+  function renderPlan() {
+    const el = $v("fnPlan"), m = window.__finLast, p = loadP();
+    if (!el) return;
+    if (!p.goals.length) { el.innerHTML = '<p class="muted">עדיין לא הוגדרו יעדים. בחרו יעד, הזינו ערך ולחצו "הוסף יעד".</p>'; return; }
+    const days = Math.max(0, (Date.now() - (p.start || Date.now())) / 86400000), expected = Math.min(1, days / 365);
+    el.innerHTML = `<p class="small muted">עברו ${Math.floor(days)} ימים מתחילת התוכנית (${fmt(expected * 100, 0)}% מהשנה).</p><ul class="plan-list">${p.goals.map((g, i) => {
+      const def = PLAN_TYPES[g.type], cur = m ? def[2](m) : g.baseline, span = g.target - g.baseline;
+      const prog = span === 0 ? (cur === g.target ? 1 : 0) : Math.min(1, Math.max(0, (cur - g.baseline) / span));
+      const st = prog >= 1 ? ["good", "🎉 הושג"] : prog >= expected ? ["good", "✅ במסלול"] : prog >= expected * 0.7 ? ["mid", "🟡 מעט מאחור"] : ["bad", "🔴 מאחור"];
+      const f = x => fmt(x, def[3]);
+      return `<li class="plan-item"><div class="row"><b>${def[0]}</b><span class="spacer"></span><span class="${st[0]}">${st[1]}</span><button type="button" class="btn ghost small" data-gdel="${i}" aria-label="הסר יעד ${def[0]}">הסר</button></div>
+        <div class="small muted">התחלה ${f(g.baseline)} ${def[1]} ← עכשיו ${f(cur)} ← יעד ${f(g.target)} ${def[1]}</div>
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(prog * 100)}" aria-label="התקדמות ${def[0]}"><div style="width:${prog * 100}%"></div></div>
+        <div class="small">התקדמות ${fmt(prog * 100, 0)}% · צפוי בנקודה הזאת: ${fmt(expected * 100, 0)}%</div></li>`;
+    }).join("")}</ul><button type="button" class="btn ghost small" id="fnGReset">התחל תוכנית חדשה (מוחק את היעדים)</button>`;
+    el.querySelectorAll("[data-gdel]").forEach(b => b.onclick = () => { const pp = loadP(); pp.goals.splice(+b.dataset.gdel, 1); saveP(pp); renderPlan(); });
+    const rs = el.querySelector("#fnGReset"); if (rs) rs.onclick = () => { saveP({ start: null, goals: [] }); renderPlan(); };
+  }
+  $v("fnGAdd").onclick = () => {
+    const m = window.__finLast; if (!m) return toast("מלאו קודם את הטופס");
+    const type = $v("fnGType").value, raw = $v("fnGTarget").value;
+    if (raw === "") return toast("הזינו ערך יעד");
+    const p = loadP(); if (p.goals.length >= 3) return toast("עד שלושה יעדים");
+    if (p.goals.some(g => g.type === type)) return toast("כבר יש יעד כזה");
+    const baseline = PLAN_TYPES[type][2](m), target = +raw;
+    if (target === baseline) return toast("ערך היעד זהה לנקודת ההתחלה");
+    if (!p.start) p.start = Date.now();
+    p.goals.push({ type, target, baseline }); saveP(p); $v("fnGTarget").value = ""; renderPlan();
+  };
   // ----- היסטוריה -----
   const HKEY = "ia-finance-history";
   const loadH = () => { try { return JSON.parse(localStorage.getItem(HKEY)) || []; } catch (e) { return []; } };
@@ -181,7 +223,7 @@ Routes.finance = function () {
     rd.readAsText(f);
   };
   Object.values(ids).forEach(id => $v(id).addEventListener("input", render));
-  renderHist();
+  renderHist(); renderPlan();
   $v("fnPrint").onclick = () => window.print();
   $v("fnReset").onclick = () => { localStorage.removeItem(FIN_KEY); Routes.finance(); };
   render();

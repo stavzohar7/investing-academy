@@ -145,3 +145,6 @@ html.a11y-still .avatar.talk { animation: none; }
 .fin-step.good { border-inline-start-color: var(--green); }
 .mid { color: var(--gold); }
 @media print { .nav, .bottom-nav, .topbar, .footer, #subnav, .no-print { display: none !important; } }
+
+.plan-list { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 12px; }
+.plan-item { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--card2); }
