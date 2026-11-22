@@ -63,6 +63,18 @@ Routes.portfolio = function () {
       </div>
       <div id="pqRes" aria-live="polite"></div>
     </section>
+    <section class="card mt" aria-labelledby="prT">
+      <h2 id="prT">🧭 מה הייתי עושה? לקבוע כלל מראש</h2>
+      <p class="small muted">נניח שהתרחיש שבחרתם למעלה מתרחש בשנה 1, ואז יש התאוששות בהדרגה. כך נראות שלוש תגובות אפשריות — לפי התיק והתרחיש שהזנתם. זה תרחיש בדיוני אחד: ירידות והתאוששויות אמיתיות שונות במהירות ובצורה, ולפעמים ההתאוששות איטית יותר.</p>
+      <div class="grid grid-3">
+        <div class="field"><label for="prContrib">הפקדה שנתית (₪, בתחילת כל שנה)</label><input id="prContrib" type="number" inputmode="numeric" min="0" step="1000"></div>
+        <div class="field"><label for="prGrowth">תשואה שנתית אחרי ההתאוששות (%)</label><input id="prGrowth" type="number" inputmode="decimal" min="0" max="15" step="0.5"></div>
+        <div class="field"><label for="prRec">שנים עד שהתיק חוזר לרמה שלפני הירידה</label><input id="prRec" type="number" inputmode="numeric" min="1" max="8" step="1"></div>
+        <div class="field"><label for="prCash">שנים במזומן אחרי מכירה בפאניקה</label><input id="prCash" type="number" inputmode="numeric" min="1" max="6" step="1"></div>
+        <div class="field"><label for="prCashY">ריבית על המזומן (%)</label><input id="prCashY" type="number" inputmode="decimal" min="0" max="10" step="0.5"></div>
+      </div>
+      <div id="prRes" aria-live="polite"></div>
+    </section>
     <p class="small muted">התוכן לימודי בלבד ואינו ייעוץ השקעות. מכירה לצורך איזון עשויה ליצור אירוע מס — בדקו לפני פעולה.</p>`;
 
   const $v = id => document.getElementById(id);
@@ -88,6 +100,7 @@ Routes.portfolio = function () {
     const targets = w.map(x => x * total);
     st = { value, alloc, preset: $v("pfPreset").value, shocks, band }; try { localStorage.setItem(PF_KEY, JSON.stringify(st)); } catch (e) { /* ignore */ }
     const rec = loss > 0 && loss < 1 ? 1 / (1 - loss) - 1 : null;
+    window.__pfLoss = loss; if (typeof rulesRun === "function") rulesRun();
     $v("pfRes").innerHTML = `
       <div class="stats-strip" role="group" aria-label="סיכום">
         <div class="card center"><b>${fmt(total)} ₪</b><span class="small muted">שווי אחרי התרחיש</span></div>
@@ -184,8 +197,34 @@ Routes.portfolio = function () {
   ["pqMode", "pqAmt", "pqStart"].forEach(id => $v(id).addEventListener("input", seqRisk));
   seqRisk();
 
+  // ----- כלל תגובה מראש -----
+  $v("prContrib").value = 40000; $v("prGrowth").value = 6; $v("prRec").value = 3; $v("prCash").value = 2; $v("prCashY").value = 1;
+  function prModel(o) {
+    const rec = Math.pow(1 / (1 - o.L), 1 / o.recYears) - 1, H = 10;
+    const ret = y => y === 1 ? -o.L : (y <= 1 + o.recYears ? rec : o.g / 100);
+    let a = o.start, b = o.start, c = (o.start + o.contrib) * (1 - o.L);
+    for (let y = 1; y <= H; y++) a = (a + o.contrib) * (1 + ret(y));
+    for (let y = 1; y <= H; y++) b = (b + (y <= 2 ? 0 : o.contrib)) * (1 + ret(y));
+    for (let y = 2; y <= H; y++) c = (c + o.contrib) * (1 + (y < 2 + o.cashYears ? o.cashY / 100 : ret(y)));
+    return { rec, a, b, c };
+  }
+  function rulesRun() {
+    const L = window.__pfLoss;
+    if (L == null || !(L > 0 && L < 1)) { $v("prRes").innerHTML = '<p class="muted">בחרו תרחיש ירידה למעלה כדי לראות את הכללים.</p>'; return; }
+    const o = { start: Math.max(0, +$v("pfValue").value || 0), contrib: Math.max(0, +$v("prContrib").value || 0), g: +$v("prGrowth").value || 0, recYears: Math.min(8, Math.max(1, Math.round(+$v("prRec").value || 3))), cashYears: Math.min(6, Math.max(1, Math.round(+$v("prCash").value || 2))), cashY: +$v("prCashY").value || 0, L };
+    const r = prModel(o), best = Math.max(r.a, r.b, r.c);
+    const rows = [["א. ממשיכים בתוכנית: מחזיקים ומפקידים כרגיל", r.a], ["ב. עוצרים הפקדות בשנתיים הראשונות ומחכים", r.b], ["ג. מוכרים אחרי הירידה, ממתינים במזומן וחוזרים", r.c]];
+    $v("prRes").innerHTML = `
+      <p class="small muted">הירידה בתיק: ${fmt(L * 100, 1)}%. כדי לחזור לאותה רמה ב-${o.recYears} שנים נדרשת עלייה של ${fmt(r.rec * 100, 1)}% בשנה בתקופת ההתאוששות. אופק: 10 שנים.</p>
+      <div class="table-wrap"><table><caption class="sr-only">תוצאות שלוש תגובות</caption><thead><tr><th scope="col">כלל</th><th scope="col">שווי אחרי 10 שנים</th><th scope="col">מול הגבוה ביותר</th></tr></thead>
+      <tbody>${rows.map(x => `<tr><th scope="row">${x[0]}</th><td>${fmt(x[1])} ₪</td><td>${x[1] === best ? "הגבוה ביותר" : "−" + fmt(best - x[1]) + " ₪"}</td></tr>`).join("")}</tbody></table></div>
+      <p>המסר אינו "כך תרוויחו": בתרחיש הזה מי שיצא וחזר <b>אחרי</b> ההתאוששות הפסיד אותה. אבל אם ההתאוששות הייתה איטית או לא הגיעה, התוצאה הייתה אחרת. זו הסיבה שכותבים <b>כלל מראש</b>, בראש שקט, ומבצעים אותו — ולא מחליטים תחת פאניקה. ובודקים קודם אם אתם באמת מסוגלים לעמוד בירידה (השאלה שלמעלה).</p>
+      <p class="small muted">המודל: הפקדה בתחילת כל שנה, ירידה בשנה 1, התאוששות שווה בכל שנה עד חזרה לרמה הקודמת, ואז תשואה קבועה. אין מס, עמלות ואינפלציה.</p>`;
+  }
+  ["prContrib", "prGrowth", "prRec", "prCash", "prCashY"].forEach(id => $v(id).addEventListener("input", rulesRun));
+
   $v("pfPreset").onchange = e => { const p = PF_PRESETS[e.target.value]; if (p.s) p.s.forEach((x, i) => $v("pfS" + i).value = x); calc(); };
   PF_ASSETS.forEach((_, i) => { $v("pfS" + i).addEventListener("input", () => { $v("pfPreset").value = "custom"; calc(); }); $v("pfA" + i).addEventListener("input", calc); });
   $v("pfValue").addEventListener("input", calc); $v("pfBand").addEventListener("input", calc);
-  calc();
+  calc(); rulesRun();
 };
