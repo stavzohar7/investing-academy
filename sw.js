@@ -1,7 +1,7 @@
 // Service Worker — מאפשר להתקין את האפליקציה ולהשתמש בה גם בלי אינטרנט.
 // אסטרטגיה: "רשת קודם" — כשיש אינטרנט תמיד מקבלים את הגרסה העדכנית (כולל דוחות שבועיים חדשים),
 // וכשאין — מגישים את העותק השמור.
-const CACHE = "investing-academy-v44";
+const CACHE = "investing-academy-v45";
 const CORE = [
   "./", "index.html", "styles.css", "theme.css", "manifest.webmanifest", "icon.svg",
   "content.js", "content2.js", "content3.js", "content4.js", "content5.js", "content6.js",
