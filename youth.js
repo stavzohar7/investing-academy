@@ -198,7 +198,7 @@ Routes.youthplan = function () {
             <tr><th scope="row">אג"ח / מזומן</th><td>${100 - mid}%</td><td>יציבות ונזילות</td></tr>
           </tbody></table></div>
         <p><b>מבחן קיצון להדגמה:</b> בתרחיש שבו המניות יורדות ${equityDrop}% והאג"ח ${bondDrop}%, התיק הזה יורד בערך <b>${fmt(loss, 1)}%</b>. ${toleratedOk ? `<span class="good">זה בתוך מה שאמרתם שתעמדו בו (${v.tol}%).</span>` : `<span class="bad">זה מעבר למה שאמרתם שתעמדו בו (${v.tol}%) — כדאי לשקול נתח מניות נמוך יותר.</span>`}</p>
-        <p class="small muted">היסטורית היו ירידות גדולות יותר מ-40% (ראו שיעור בועות וקריסות). המספרים הם הדגמה בלבד. <a href="#portfolio">למבחן קיצון מלא</a></p>
+        <p class="small muted">היסטורית היו ירידות גדולות יותר מ-40% (ראו שיעור בועות וקריסות). המספרים הם הדגמה בלבד. <a href="#portfolio">למבחן קיצון מלא</a> · <a href="#compare">להשוואת עלויות של קרנות וברוקרים</a></p>
         <h3>עקרונות בבחירת מוצר (בלי שמות)</h3>
         <ul><li>פיזור רחב במקום מניות בודדות, במיוחד כשמתחילים.</li><li>דמי ניהול ועמלות נמוכים — הפרש של אחוז מצטבר לסכומים גדולים (ראו כלי התיק).</li><li>הפקדה קבועה ואוטומטית במקום ניסיון לבחור רגע כניסה.</li><li>אל תקנו מה שאתם לא מבינים, ואל תפעלו לפי טיפים ברשתות.</li><li>פנסיה וקרן השתלמות הן חלק מהתמונה: בדקו מה כבר מושקע שם לפני שמוסיפים.</li></ul>
       </section>
@@ -213,5 +213,110 @@ Routes.youthplan = function () {
         <p class="small muted">אנחנו לא מנבאים את השוק ולא נותנים המלצות. לייעוץ אישי פנו ליועץ השקעות מורשה.</p></section>`;
   }
   Object.values(map).forEach(id => $v(id).addEventListener("input", calc));
+  calc();
+};
+
+// ===================================================================
+//  ⚖️ השוואת עלויות: קרנות וברוקרים — מסגרת ניטרלית שבה מזינים הצעות שאספתם בעצמכם ורואים מה העלות לאורך זמן.
+//  האתר לא ממליץ על גוף, קרן או מוצר ספציפיים, ואינו ייעוץ השקעות.
+// ===================================================================
+TITLES.compare = "השוואת עלויות: קרנות וברוקרים";
+
+function cmSim(o) {
+  // o: monthly, years, gross, fee (שנתי %), fixed (₪ לפעולה), pct (% מהפעולה), fx (% המרה), custody (₪ בשנה)
+  const r = (o.gross - o.fee) / 100 / 12, r0 = o.gross / 100 / 12, n = Math.round(o.years * 12);
+  let v = 0, v0 = 0, paidCosts = 0;
+  for (let m = 1; m <= n; m++) {
+    const trade = o.fixed + o.monthly * o.pct / 100 + o.monthly * o.fx / 100;
+    paidCosts += trade;
+    v = (v + Math.max(0, o.monthly - trade)) * (1 + r);
+    v0 = (v0 + o.monthly) * (1 + r0);
+    if (m % 12 === 0 && o.custody) { v = Math.max(0, v - o.custody); paidCosts += o.custody; }
+  }
+  return { v, v0, drag: v0 - v, paidCosts };
+}
+
+Routes.compare = function () {
+  const KEY = "ia-compare";
+  let s = { monthly: 1500, years: 20, gross: 6, opts: [
+    { n: "אפשרות א׳ (דוגמה)", fee: 0.1, fixed: 0, pct: 0.1, fx: 0.2, custody: 0 },
+    { n: "אפשרות ב׳ (דוגמה)", fee: 0.6, fixed: 5, pct: 0, fx: 0.5, custody: 60 },
+    { n: "אפשרות ג׳ (דוגמה)", fee: 1.2, fixed: 0, pct: 0.3, fx: 0.8, custody: 0 }] };
+  try { const x = JSON.parse(localStorage.getItem(KEY)); if (x && x.opts) s = x; } catch (e) { /* ignore */ }
+
+  app().innerHTML = `
+    <h1>⚖️ השוואת עלויות: קרנות וברוקרים</h1>
+    <div class="box warn"><b>האתר לא ממליץ על גוף השקעות, ברוקר, קרן או מוצר ספציפיים ואינו ייעוץ השקעות.</b> אנחנו לא מורשים לתת המלצה אישית, והעלויות והתנאים אצל כל גוף משתנים ועלולים להתעדכן. לכן הכלי הזה עובד הפוך: <b>אתם אוספים הצעות מחיר מהגופים שמעניינים אתכם</b> (באתר או בטלפון), מזינים אותן, ורואים מה העלות הכוללת לאורך השנים.</div>
+    <div class="grid grid-2 mt">
+      <section class="card" aria-labelledby="cmG"><h2 id="cmG">הנחות כלליות</h2>
+        <div class="field"><label for="cmMonthly">הפקדה חודשית (₪)</label><input id="cmMonthly" type="number" inputmode="numeric" min="0" step="100"></div>
+        <div class="field"><label for="cmYears">שנים</label><input id="cmYears" type="number" inputmode="numeric" min="1" max="50"></div>
+        <div class="field"><label for="cmGross">תשואה שנתית משוערת לפני עלויות (%) — הנחה להדגמה</label><input id="cmGross" type="number" inputmode="decimal" min="0" max="20" step="0.5"></div>
+        <p class="small muted">הדגמה: פעולה אחת בחודש (קנייה בהפקדה החודשית). התשואה זהה בכל האפשרויות, כך שההפרש הוא רק עלות.</p>
+      </section>
+      <section class="card" aria-labelledby="cmO"><h2 id="cmO">הצעות שאספתם</h2>
+        <div class="table-wrap"><table><caption class="sr-only">הצעות לעלויות</caption>
+          <thead><tr><th scope="col">שם</th><th scope="col">דמי ניהול שנתיים (%)</th><th scope="col">עמלה קבועה לפעולה (₪)</th><th scope="col">עמלה באחוזים (%)</th><th scope="col">עמלת המרת מט"ח (%)</th><th scope="col">דמי משמרת בשנה (₪)</th></tr></thead>
+          <tbody>${s.opts.map((o, i) => `<tr><td><input aria-label="שם אפשרות ${i + 1}" id="cmN${i}" value="${esc(o.n)}"></td>${["fee", "fixed", "pct", "fx", "custody"].map(k => `<td><input aria-label="${k} אפשרות ${i + 1}" id="cm_${k}${i}" type="number" inputmode="decimal" step="0.05" min="0" value="${o[k]}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>
+        <p class="small muted">ערכי ברירת המחדל הם <b>דוגמה בדיונית</b> ואינם נתוני אמת של גוף כלשהו. החליפו אותם בהצעות המחיר שקיבלתם.</p>
+      </section>
+    </div>
+    <section class="card mt" aria-labelledby="cmR" aria-live="polite"><h2 id="cmR">התוצאה</h2><div id="cmRes"></div></section>
+
+    <section class="card mt" aria-labelledby="cmL"><h2 id="cmL">📋 איך בוחרים ברוקר או בית השקעות</h2>
+      <ul>
+        <li><b>רישיון ופיקוח:</b> ודאו שהגוף מורשה על ידי הרשות לניירות ערך (אפשר לבדוק באתר הרשות). אל תעבירו כסף לגוף שאינו מורשה.</li>
+        <li><b>הפרדת נכסים והגנה:</b> הבינו איפה הנכסים שלכם רשומים ומה קורה אם הגוף נקלע לקשיים.</li>
+        <li><b>עלויות מלאות:</b> דמי ניהול, עמלות קנייה ומכירה, דמי משמרת, עמלת המרת מט"ח (לעיתים העלות הגדולה ביותר), מינימום לעמלה, ועלויות הוצאת כסף.</li>
+        <li><b>מיסוי:</b> האם הגוף מנכה ומדווח מס אוטומטית (לרוב בגוף ישראלי) או שאתם מדווחים בעצמכם (בגוף זר) — וכל מה שקשור למס על דיבידנד ולמס עיזבון אמריקאי. בדקו עם רואה חשבון.</li>
+        <li><b>גישה לשווקים ולמוצרים:</b> אילו בורסות ואילו קרנות זמינות, ושפת השירות והממשק.</li>
+        <li><b>שירות וממשק:</b> איכות האפליקציה, זמני תגובה והאם יש אנשים אמיתיים לפנות אליהם.</li>
+        <li><b>ביקורות ותלונות:</b> חפשו מידע עצמאי, ולא רק את מה שהגוף מפרסם על עצמו.</li>
+      </ul></section>
+
+    <section class="card mt" aria-labelledby="cmF"><h2 id="cmF">📋 איך בודקים קרן מדד או קרן סל</h2>
+      <ul>
+        <li><b>איזה מדד היא עוקבת:</b> רחב ומפוזר (כמה מדינות וחברות) או צר? האם זה בדיוק מה שרציתם לקנות?</li>
+        <li><b>דמי ניהול שנתיים:</b> עלות קבועה שמצטברת לאורך עשורים. השוו קרנות שעוקבות אחרי אותו מדד.</li>
+        <li><b>סטיית עקיבה:</b> כמה הקרן מפגרת בפועל אחרי המדד.</li>
+        <li><b>גודל, נזילות וספרד:</b> קרן גדולה ונסחרת היטב קל יותר לקנות ולמכור.</li>
+        <li><b>צוברת או מחלקת:</b> דיבידנדים מושקעים מחדש או משולמים — יש השלכות מס.</li>
+        <li><b>מטבע וחשיפה:</b> מה המטבע שבו נסחרת הקרן, והאם יש גידור מטבע.</li>
+        <li><b>מקום הרישום של הקרן:</b> יש השלכות מס שונות; בישראל בדקו במיוחד מס עיזבון אמריקאי בהחזקה ישירה בנכסים אמריקאיים.</li>
+        <li><b>מי מנהל ומה המבנה:</b> קרן סל פיזית או סינתטית (ברמת הבנה בסיסית), וגוף מנהל בעל מוניטין.</li>
+      </ul>
+      <p class="small muted">ראו גם את <a href="#lesson/l1-4">השיעור על קרנות מדד</a> ואת <a href="#portfolio">כלי התיק</a>.</p></section>
+
+    <section class="card mt" aria-labelledby="cmQ"><h2 id="cmQ">❓ שאלות לשאול יועץ מורשה (אם אתם מתייעצים)</h2>
+      <ol>
+        <li>מה הרישיון שלך, ומי מפקח עליך?</li>
+        <li>איך אתה מרוויח — עמלה ממני, עמלות מגורמים אחרים, או שכר קבוע? יש לך ניגוד עניינים?</li>
+        <li>מה העלות הכוללת של ההמלצה, בשקלים ובאחוזים, בשנה הראשונה ובכל שנה?</li>
+        <li>למה דווקא המוצר הזה ולא חלופה זולה ומפוזרת? מה ההנחות?</li>
+        <li>מה הסיכון הגרוע ביותר, ומה קורה אם התיק יורד 30%?</li>
+        <li>איך זה מתחבר לכרית שלי, לפנסיה ולמטרות שלי?</li>
+        <li>אפשר לקבל את ההמלצה והעלויות בכתב?</li>
+      </ol></section>
+    <p class="small muted mt">התוכן לימודי בלבד ואינו ייעוץ השקעות, פנסיה, ביטוח או מס.</p>`;
+
+  const $v = id => document.getElementById(id);
+  $v("cmMonthly").value = s.monthly; $v("cmYears").value = s.years; $v("cmGross").value = s.gross;
+  const read = () => ({ monthly: +$v("cmMonthly").value || 0, years: Math.min(50, Math.max(1, Math.round(+$v("cmYears").value || 1))), gross: +$v("cmGross").value || 0,
+    opts: s.opts.map((_, i) => { const o = { n: $v("cmN" + i).value }; ["fee", "fixed", "pct", "fx", "custody"].forEach(k => { o[k] = +$v("cm_" + k + i).value || 0; }); return o; }) });
+  function calc() {
+    const v = read();
+    try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) { /* ignore */ }
+    const res = v.opts.map(o => ({ o, r: cmSim({ ...o, monthly: v.monthly, years: v.years, gross: v.gross }) }));
+    const best = Math.max(...res.map(x => x.r.v)), paid = v.monthly * v.years * 12;
+    $v("cmRes").innerHTML = `
+      <p class="small muted">סך ההפקדות: ${fmt(paid)} ₪ · שווי בלי שום עלות (הדגמה): ${fmt(res[0].r.v0)} ₪</p>
+      <div class="table-wrap"><table><caption class="sr-only">תוצאות ההשוואה</caption>
+        <thead><tr><th scope="col">אפשרות</th><th scope="col">שווי אחרי ${v.years} שנה</th><th scope="col">עלות כוללת שנגרעה</th><th scope="col">מהשווי ללא עלויות</th><th scope="col">מול הטובה ביותר</th></tr></thead>
+        <tbody>${res.map(x => `<tr><th scope="row">${esc(x.o.n)}</th><td>${fmt(x.r.v)} ₪</td><td>${fmt(x.r.drag)} ₪</td><td>${fmt(x.r.v0 ? x.r.drag / x.r.v0 * 100 : 0, 1)}%</td><td>${x.r.v === best ? "הטובה ביותר" : "−" + fmt(best - x.r.v) + " ₪"}</td></tr>`).join("")}</tbody></table></div>
+      <p>הפער בין האפשרות הזולה ליקרה ביותר: <b>${fmt(best - Math.min(...res.map(x => x.r.v)))} ₪</b> אחרי ${v.years} שנה — לפני כל שיקול של שירות, מיסוי, נגישות ואיכות המוצר. עלות נמוכה היא קריטריון חשוב, אבל לא היחיד.</p>
+      <p class="small muted">המודל מפושט: פעולה אחת בחודש, תשואה קבועה, ללא מס ואינפלציה. "עלות כוללת שנגרעה" = הפרש מול מצב בלי עלויות כלל, וכוללת גם את השפעת דמי הניהול על התשואה.</p>`;
+  }
+  s.opts.forEach((_, i) => { ["N", "_fee", "_fixed", "_pct", "_fx", "_custody"].forEach(k => { const el = $v(k === "N" ? "cmN" + i : "cm" + k + i); if (el) el.addEventListener("input", calc); }); });
+  ["cmMonthly", "cmYears", "cmGross"].forEach(id => $v(id).addEventListener("input", calc));
   calc();
 };
