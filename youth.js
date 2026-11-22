@@ -144,7 +144,7 @@ Routes.youthplan = function () {
         <div class="field"><label for="ypSave">כמה אתם חוסכים בחודש (₪)</label><input id="ypSave" type="number" inputmode="numeric" min="0" step="100"></div>
         <div class="field"><label for="ypLiquid">כמה כסף נזיל יש לכם היום בחיסכון (₪)</label><input id="ypLiquid" type="number" inputmode="numeric" min="0" step="1000"></div>
         <div class="field"><label for="ypNeed">כסף שתצטרכו בתוך 3 שנים (דירה, רכב, לימודים) (₪)</label><input id="ypNeed" type="number" inputmode="numeric" min="0" step="1000"></div>
-        <div class="field"><label for="ypTol">בירידה בשוק, כמה הפסד בתיק ההשקעה הייתם מצליחים לראות בלי למכור?</label><select id="ypTol">${YP_TOL.map(t => `<option value="${t[0]}">${t[1]}</option>`).join("")}</select></div>
+        <div class="field"><label for="ypTol">בירידה בשוק, כמה הפסד בתיק ההשקעה הייתם מצליחים לראות בלי למכור?</label><select id="ypTol">${YP_TOL.map(t => `<option value="${t[0]}">${t[1]}</option>`).join("")}</select><span class="small muted">לא בטוחים? <a href="#risk">בוחן הסבלנות שלי לסיכון</a></span></div>
       </section>
     </div>
     <div id="ypOut" class="mt" aria-live="polite"></div>
@@ -319,4 +319,62 @@ Routes.compare = function () {
   s.opts.forEach((_, i) => { ["N", "_fee", "_fixed", "_pct", "_fx", "_custody"].forEach(k => { const el = $v(k === "N" ? "cmN" + i : "cm" + k + i); if (el) el.addEventListener("input", calc); }); });
   ["cmMonthly", "cmYears", "cmGross"].forEach(id => $v(id).addEventListener("input", calc));
   calc();
+};
+
+// ===================================================================
+//  🧪 בוחן הסבלנות שלי לסיכון: שאלון קצר שמפריד בין יכולת לשאת הפסד (מצב כלכלי) לבין נכונות (התנהגות).
+//  כלי לחשיבה עצמית — לא קובע התאמה, לא מחליף ייעוץ, ושאלון אינו מנבא התנהגות אמיתית בעת הפסד.
+// ===================================================================
+TITLES.risk = "בוחן הסבלנות שלי לסיכון";
+
+const RISK_Q = [
+  { g: "cap", q: "מתי תצטרכו את הכסף שאתם שוקלים להשקיע?", o: [["בתוך פחות מ-3 שנים", 0], ["בעוד 3 עד 7 שנים", 1], ["בעוד 7 עד 15 שנים", 2], ["בעוד יותר מ-15 שנים", 3]] },
+  { g: "cap", q: "עד כמה ההכנסה שלכם יציבה?", o: [["לא יציבה או משתנה מאוד", 0], ["יציבה חלקית", 1], ["יציבה", 2], ["יציבה מאוד, ויש גם מפרנס נוסף או גיבוי", 3]] },
+  { g: "cap", q: "כמה כרית ביטחון נזילה יש לכם?", o: [["אין", 0], ["פחות מ-3 חודשי הוצאות", 1], ["3 עד 6 חודשים", 2], ["יותר מ-6 חודשים", 3]] },
+  { g: "cap", q: "מה מצב החובות שלכם?", o: [["יש חובות יקרים (אשראי, מינוס)", 0], ["יש חובות, בריבית בינונית", 1], ["רק חוב זול (למשל משכנתא)", 2], ["אין חובות", 3]] },
+  { g: "will", q: "התיק שלכם יורד 20% בחודש אחד. מה אתם עושים בפועל?", o: [["מוכרים הכול כדי לעצור את ההפסד", 0], ["מוכרים חלק", 1], ["לא נוגעים, ממשיכים לפי התוכנית", 2], ["ממשיכים ואפילו מוסיפים כסף", 3]] },
+  { g: "will", q: "מה יותר חשוב לכם בהשקעה?", o: [["לא להפסיד בשום מצב", 0], ["יציבות, גם אם התשואה נמוכה", 1], ["איזון בין יציבות לצמיחה", 2], ["צמיחה לאורך זמן, גם עם תנודתיות", 3]] },
+  { g: "will", q: "איזה ניסיון יש לכם בהשקעות?", o: [["אין", 0], ["מעט, בלי שראיתי ירידה גדולה", 1], ["כמה שנים, כולל ירידה משמעותית", 2], ["ניסיון במספר מחזורי שוק", 3]] },
+  { g: "will", q: "אם התיק יורד 30%, כמה זמן תוכלו להמשיך להפקיד בלי לגעת?", o: [["לא אוכל — זה יפריע לי לישון", 0], ["כמה חודשים", 1], ["שנה", 2], ["כמה שנים", 3]] }
+];
+
+Routes.risk = function () {
+  let ans = Array(RISK_Q.length).fill(null);
+  try { const a = JSON.parse(localStorage.getItem("ia-risk")); if (Array.isArray(a) && a.length === RISK_Q.length) ans = a; } catch (e) { /* ignore */ }
+  app().innerHTML = `
+    <h1>🧪 בוחן הסבלנות שלי לסיכון</h1>
+    <div class="box warn"><b>כלי לחשיבה עצמית, לא קביעת התאמה ולא ייעוץ השקעות.</b> שאלון קצר אינו יכול לדעת איך תתנהגו כשתראו הפסד אמיתי. הוא מפריד בין שני דברים: <b>יכולת</b> לשאת הפסד (מצב כלכלי: אופק, הכנסה, כרית, חובות) לבין <b>נכונות</b> לשאת אותו (התנהגות ורגשות). בתיק משתמשים בנמוך מביניהם.</div>
+    <form id="riskForm" class="mt">${RISK_Q.map((q, i) => `<fieldset class="q card mb"><legend><b>${i + 1}. ${esc(q.q)}</b> <span class="small muted">(${q.g === "cap" ? "יכולת" : "נכונות"})</span></legend>${q.o.map((o, k) => `<label class="opt-row"><input type="radio" name="rq${i}" value="${k}" ${ans[i] === k ? "checked" : ""}> ${esc(o[0])}</label>`).join("")}</fieldset>`).join("")}</form>
+    <section class="card" aria-labelledby="rkR" aria-live="polite"><h2 id="rkR">התוצאה</h2><div id="riskRes"><p class="muted">ענו על כל השאלות כדי לראות תוצאה.</p></div></section>
+    <p class="small muted mt">התוכן לימודי בלבד ואינו ייעוץ השקעות. הנתונים נשמרים בדפדפן בלבד.</p>`;
+
+  const level = s => s <= 3 ? 10 : s <= 6 ? 20 : s <= 9 ? 30 : 40;
+  const names = { 10: "נמוכה (הפסד של עד כ-10% נסבל)", 20: "מתונה (עד כ-20%)", 30: "בינונית-גבוהה (עד כ-30%)", 40: "גבוהה (40% ומעלה)" };
+  function render() {
+    try { localStorage.setItem("ia-risk", JSON.stringify(ans)); } catch (e) { /* ignore */ }
+    const el = document.getElementById("riskRes");
+    if (ans.some(a => a == null)) { el.innerHTML = `<p class="muted">ענו על כל השאלות (${ans.filter(a => a != null).length}/${ans.length}).</p>`; return; }
+    const sum = g => RISK_Q.reduce((s, q, i) => s + (q.g === g ? q.o[ans[i]][1] : 0), 0);
+    const cap = sum("cap"), will = sum("will"), cl = level(cap), wl = level(will), fin = Math.min(cl, wl);
+    const flags = [];
+    if (ans[0] === 0) flags.push("הכסף נדרש בתוך פחות מ-3 שנים: כסף כזה בדרך כלל לא שייך לשוק המניות — אין זמן להתאושש מירידה.");
+    if (ans[2] === 0) flags.push("אין כרית ביטחון: כדאי לבנות אותה לפני השקעה, כדי שלא תצטרכו למכור בירידה.");
+    if (ans[3] === 0) flags.push("יש חובות יקרים: סגירתם היא בדרך כלל \"תשואה\" בטוחה גבוהה יותר מהשקעה.");
+    if (ans[4] === 0 && cl > wl) flags.push("היכולת הכלכלית שלכם גבוהה מהנכונות הרגשית: זה בסדר, אבל התיק צריך להתאים לנכונות — אחרת קל למכור בפאניקה.");
+    if (cl < wl) flags.push("הנכונות שלכם גבוהה מהיכולת הכלכלית: זהירות — המצב הכלכלי (אופק, כרית, חובות) הוא מה שמגביל כרגע.");
+    el.innerHTML = `
+      <div class="grid grid-3">
+        <div class="card center"><div class="small muted">יכולת (מצב כלכלי)</div><b style="font-size:1.4rem">${cap}/12</b><div class="small muted">${names[cl]}</div></div>
+        <div class="card center"><div class="small muted">נכונות (התנהגות)</div><b style="font-size:1.4rem">${will}/12</b><div class="small muted">${names[wl]}</div></div>
+        <div class="card center"><div class="small muted">הנמוך מביניהם</div><b style="font-size:1.4rem">${fin}%</b><div class="small muted">הפסד שנסבל (הערכה גסה)</div></div>
+      </div>
+      <p class="mt">התוצאה: <b>סבלנות להפסד ${names[fin]}</b>. זו הערכה גסה לצורך חשיבה והזנה לכלים באתר; לא החלטה על הקצאה.</p>
+      ${flags.length ? `<h3>נקודות למחשבה</h3><ul>${flags.map(f => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
+      <p><button type="button" class="btn" id="rkUse">להשתמש בתוצאה בכלי "ההתנהלות שלי לפי עבודה וחיסכון"</button> <a class="btn ghost" href="#assets">בודק היגיון לתיק</a> <a class="btn ghost" href="#portfolio">מבחן קיצון</a></p>
+      <p class="small muted">שאלונים נוטים להעריך בחסר את הקושי של הפסד אמיתי. מבחן קיצון עם המספרים שלכם (בשקלים) מדויק יותר מהרגשה — והשאלה האמיתית היא אם תוכלו להמשיך בתוכנית כשהתיק יורד.</p>`;
+    const u = document.getElementById("rkUse");
+    if (u) u.onclick = () => { let st = {}; try { st = JSON.parse(localStorage.getItem("ia-youthplan")) || {}; } catch (e) { /* ignore */ } st.tol = fin; try { localStorage.setItem("ia-youthplan", JSON.stringify(st)); } catch (e) { /* ignore */ } location.hash = "#youthplan"; };
+  }
+  document.getElementById("riskForm").addEventListener("change", e => { const m = /^rq(\d+)$/.exec(e.target.name); if (m) { ans[+m[1]] = +e.target.value; render(); } });
+  render();
 };

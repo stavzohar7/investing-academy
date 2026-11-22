@@ -63,7 +63,8 @@ Routes.assets = function () {
       <p class="small muted">הזינו אחוזים לכל רכיב (הסכום אמור להיות 100). ערכי ברירת המחדל הם דוגמה ללימוד בלבד. הכלי לא קובע מה נכון, אלא מצביע על דברים שכדאי לחשוב עליהם: ריכוז, ספקולציה, עלות והפסד בתרחיש קיצון.</p>
       <div class="grid grid-3">${AS_CATS.map(c => `<div class="field"><label for="as_${c.id}">${c.n} (%)</label><input id="as_${c.id}" type="number" inputmode="decimal" min="0" max="100" step="1"></div>`).join("")}</div>
       <p id="asSum" class="small" aria-live="polite"></p>
-      <div id="asRes" aria-live="polite"></div></section>
+      <div id="asRes" aria-live="polite"></div>
+      <p class="small muted">לא בטוחים כמה הפסד תעמדו בו? <a href="#risk">בוחן הסבלנות שלי לסיכון</a></p></section>
 
     <p class="small muted mt">התוכן לימודי בלבד ואינו ייעוץ השקעות, פנסיה, ביטוח או מס. ההפסדים בתרחיש הם הדגמה, ולא תחזית — היו ירידות קטנות וגדולות מהן.</p>`;
 
