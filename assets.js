@@ -99,8 +99,21 @@ Routes.assets = function () {
       </div>
       <h3>נקודות למחשבה</h3>
       <ul>${flags.map(f => `<li class="${f[0]}">${esc(f[1])}</li>`).join("")}</ul>
+      <p><button type="button" class="btn" id="asToPf">➡️ העבר את התיק למבחן הקיצון המלא</button></p>
+      <p class="small muted">ההעברה ממפה את הרכיבים לארבע הקטגוריות של כלי התיק: <b>קרן מדד</b> = מניות מפוזרות + מדינה אחת + קרן אקטיבית + נדל"ן + זהב; <b>אג"ח</b>; <b>מניות בודדות ושאר הריכוז</b> = מניות בודדות + מניית המעסיק + קריפטו + אופציות ומינוף; <b>מזומן</b>. זו הפשטה — אפשר לשנות שם את הערכים.</p>
       <p class="small muted">תרחיש הקיצון משתמש בירידות לדוגמה לכל נכס (למשל מניות מפוזרות −40%, מניות בודדות −55%, קריפטו −70%, אג"ח −5%). עלויות ההדגמה: כמה אחוזים בשנה לפי סוג הנכס. בדקו עלויות אמיתיות לפני כל החלטה. <a href="#portfolio">למבחן קיצון מלא</a> · <a href="#youthplan">להתנהלות לפי עבודה וחיסכון</a></p>`;
   }
+  $v("asRes").addEventListener("click", e => {
+    if (!e.target.closest("#asToPf")) return;
+    const v = {}; AS_CATS.forEach(c => { v[c.id] = Math.max(0, +$v("as_" + c.id).value || 0); });
+    const sum = Object.values(v).reduce((a, b) => a + b, 0); if (!sum) return;
+    const pc = x => Math.round(x / sum * 1000) / 10;
+    const alloc = [pc(v.world + v.country + v.active + v.reit + v.gold), pc(v.bonds), pc(v.stocks + v.employer + v.crypto + v.spec)]; alloc.push(Math.round((100 - alloc[0] - alloc[1] - alloc[2]) * 10) / 10);
+    let st = {}; try { st = JSON.parse(localStorage.getItem("ia-portfolio")) || {}; } catch (err) { /* ignore */ }
+    st = Object.assign({ value: 400000, preset: "sharp", shocks: [-30, -5, -45, 0], band: 5 }, st, { alloc });
+    try { localStorage.setItem("ia-portfolio", JSON.stringify(st)); } catch (err) { /* ignore */ }
+    location.hash = "#portfolio";
+  });
   AS_CATS.forEach(c => $v("as_" + c.id).addEventListener("input", check));
   check();
 };
