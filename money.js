@@ -4,7 +4,7 @@
 // ===================================================================
 TITLES.money = "ניהול כסף";
 
-const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"]];
+const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["mortgage", "🏠 משכנתא והלוואה"], ["inflation", "📉 אינפלציה"]];
 const MV = {};   // תצוגות הכלים
 
 Routes.money = function (tab) {
@@ -122,5 +122,70 @@ MV.goal = function (el) {
     document.getElementById("mgERes").innerHTML = `<p><b>יעד כרית: ${fmt(goal)} ₪</b></p><p>${mo ? `בהפקדה של ${fmt(v.save)} ₪ בחודש תגיעו ליעד בכ-<b>${mo} חודשים</b> (כ-${fmt(mo / 12, 1)} שנים).` : "הזינו הפקדה חודשית."}</p><p class="small muted">הכרית נשמרת בפיקדון או בקרן כספית נזילה, לא במניות.</p>`;
   };
   ["mgTarget", "mgYears", "mgRet", "mgExp", "mgMonths", "mgSave"].forEach(id => document.getElementById(id).addEventListener("input", calc));
+  calc();
+};
+
+// ---------- משכנתא והלוואה ----------
+const mPay = (P, a, y) => { const r = a / 100 / 12, n = Math.round(y * 12); return r ? P * r / (1 - Math.pow(1 + r, -n)) : P / n; };
+function mAmort(P, a, pmt, extra) {
+  let b = P, m = 0, int = 0, y1i = 0, y1p = 0; const r = a / 100 / 12;
+  while (b > 0.005 && m < 1200) { m++; const i = b * r; int += i; let pr = pmt + extra - i; if (pr <= 0) return null; if (pr > b) pr = b; b -= pr; if (m <= 12) { y1i += i; y1p += pr; } }
+  return { m, int, y1i, y1p };
+}
+MV.mortgage = function (el) {
+  const s = mLoad("mortgage", { loan: 800000, rate: 4.5, years: 25, extra: 500, income: 18000 });
+  el.innerHTML = `<div class="grid grid-2">
+    <section class="card" aria-labelledby="mmT"><h2 id="mmT">ההלוואה</h2>
+      ${mField("mmLoan", "סכום הלוואה (₪)", s.loan, 'min="0" step="10000"')}
+      ${mField("mmRate", "ריבית שנתית קבועה (%)", s.rate, 'min="0" max="20" step="0.1"')}
+      ${mField("mmYears", "תקופה (שנים)", s.years, 'min="1" max="40" step="1"')}
+      ${mField("mmExtra", "תשלום נוסף חודשי (₪)", s.extra, 'min="0" step="100"')}
+      ${mField("mmIncome", "הכנסה נטו חודשית (לחישוב יחס החזר) (₪)", s.income, 'min="0" step="500"')}
+      <p class="small muted">חישוב פשוט של החזר קבוע (שפיצר) בריבית קבועה וללא הצמדה. משכנתא אמיתית כוללת לרוב כמה מסלולים — השוו הצעות בכתב.</p>
+    </section>
+    <section class="card" aria-labelledby="mmO" aria-live="polite"><h2 id="mmO">תוצאה</h2><div id="mmRes"></div></section></div>`;
+  const calc = () => {
+    const v = { loan: mNum("mmLoan"), rate: mNum("mmRate"), years: Math.min(40, Math.max(1, Math.round(mNum("mmYears")))), extra: mNum("mmExtra"), income: mNum("mmIncome") };
+    mSave("mortgage", v);
+    if (!v.loan) { document.getElementById("mmRes").innerHTML = '<p class="muted">הזינו סכום הלוואה.</p>'; return; }
+    const pmt = mPay(v.loan, v.rate, v.years), base = mAmort(v.loan, v.rate, pmt, 0), ex = v.extra > 0 ? mAmort(v.loan, v.rate, pmt, v.extra) : null;
+    const cmp = [[v.years - 5, v.rate], [v.years, v.rate], [v.years + 5, v.rate], [v.years, v.rate + 1]].filter(x => x[0] >= 1 && x[0] <= 40);
+    document.getElementById("mmRes").innerHTML = `
+      <p><b>החזר חודשי: ${fmt(pmt)} ₪</b>${v.income ? ` (כ-${fmt(pmt / v.income * 100, 1)}% מההכנסה)` : ""}</p>
+      <ul><li>סך התשלומים: ${fmt(pmt * v.years * 12)} ₪</li><li>ריבית כוללת: <b>${fmt(base.int)} ₪</b> (${fmt(base.int / v.loan * 100, 0)}% מגובה ההלוואה)</li>
+      <li>בשנה הראשונה: ריבית ${fmt(base.y1i)} ₪, החזר קרן ${fmt(base.y1p)} ₪</li></ul>
+      ${ex ? `<p><b>עם תשלום נוסף של ${fmt(v.extra)} ₪ בחודש:</b> ההלוואה נסגרת ב-${ex.m} חודשים (חיסכון של ${base.m - ex.m} חודשים) וחוסכים ${fmt(base.int - ex.int)} ₪ בריבית. בדקו עמלת פירעון מוקדם.</p>` : ""}
+      <div class="table-wrap"><table><caption class="sr-only">השוואת תנאים</caption><thead><tr><th scope="col">תנאים</th><th scope="col">החזר חודשי</th><th scope="col">ריבית כוללת</th></tr></thead>
+      <tbody>${cmp.map(c => { const p = mPay(v.loan, c[1], c[0]); return `<tr><th scope="row">${c[0]} שנים, ${fmt(c[1], 1)}%</th><td>${fmt(p)}</td><td>${fmt(p * c[0] * 12 - v.loan)}</td></tr>`; }).join("")}</tbody></table></div>
+      <p class="small muted">כלל אצבע זהיר: החזר של עד כשליש מההכנסה נטו. הכללים של הבנקים ושל בנק ישראל משתנים — בדקו אותם.</p>`;
+  };
+  ["mmLoan", "mmRate", "mmYears", "mmExtra", "mmIncome"].forEach(id => document.getElementById(id).addEventListener("input", calc));
+  calc();
+};
+
+// ---------- אינפלציה ----------
+MV.inflation = function (el) {
+  const s = mLoad("inflation", { amount: 100000, infl: 3, years: 20, ret: 6 });
+  el.innerHTML = `<div class="grid grid-2">
+    <section class="card" aria-labelledby="miT"><h2 id="miT">הנתונים</h2>
+      ${mField("miAmount", "סכום היום (₪)", s.amount, 'min="0" step="1000"')}
+      ${mField("miInfl", "אינפלציה שנתית משוערת (%)", s.infl, 'min="0" max="30" step="0.5"')}
+      ${mField("miYears", "שנים", s.years, 'min="1" max="60" step="1"')}
+      ${mField("miRet", "תשואה נומינלית שנתית על החיסכון (%)", s.ret, 'min="0" max="30" step="0.5"')}
+    </section>
+    <section class="card" aria-labelledby="miO" aria-live="polite"><h2 id="miO">תוצאה</h2><div id="miRes"></div></section></div>`;
+  const calc = () => {
+    const v = { amount: mNum("miAmount"), infl: mNum("miInfl"), years: Math.min(60, Math.max(1, Math.round(mNum("miYears")))), ret: mNum("miRet") };
+    mSave("inflation", v);
+    const f = Math.pow(1 + v.infl / 100, v.years), real = (1 + v.ret / 100) / (1 + v.infl / 100) - 1;
+    const grown = v.amount * Math.pow(1 + v.ret / 100, v.years);
+    document.getElementById("miRes").innerHTML = `
+      <ul><li>כוח הקנייה של ${fmt(v.amount)} ₪ אחרי ${v.years} שנים (בלי תשואה): <b>${fmt(v.amount / f)} ₪</b> במחירי היום.</li>
+      <li>כדי לשמר כוח קנייה צריך אז: <b>${fmt(v.amount * f)} ₪</b>.</li>
+      <li>תשואה ריאלית: <b>${fmt(real * 100, 2)}%</b> בשנה.</li>
+      <li>עם תשואה נומינלית של ${v.ret}%: ${fmt(grown)} ₪ נומינלי, שהם כ-<b>${fmt(grown / f)} ₪</b> במחירי היום.</li></ul>
+      <p class="small muted">חישוב פשוט: אינפלציה ותשואה קבועות, בלי מס. בפועל שתיהן משתנות משנה לשנה.</p>`;
+  };
+  ["miAmount", "miInfl", "miYears", "miRet"].forEach(id => document.getElementById(id).addEventListener("input", calc));
   calc();
 };
