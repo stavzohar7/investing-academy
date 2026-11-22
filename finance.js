@@ -169,7 +169,7 @@ Routes.finance = function () {
   $v("fnSnap").onclick = () => {
     const m = window.__finLast; if (!m) return toast("מלאו קודם הכנסה");
     const h = loadH(), d = new Date(), date = d.toLocaleDateString("he-IL");
-    h.push({ date, netWorth: Math.round(m.netWorth), rate: +m.rate.toFixed(4), efMonths: +m.efMonths.toFixed(2), debt: Math.round(m.debt), invested: Math.round(m.invested), income: Math.round(m.income), expenses: Math.round(m.expenses) });
+    h.push({ date, ts: d.getTime(), netWorth: Math.round(m.netWorth), rate: +m.rate.toFixed(4), efMonths: +m.efMonths.toFixed(2), debt: Math.round(m.debt), invested: Math.round(m.invested), income: Math.round(m.income), expenses: Math.round(m.expenses) });
     saveH(h.slice(-24)); renderHist(); toast("תמונת המצב נשמרה");
   };
   $v("fnExport").onclick = () => {
@@ -185,4 +185,18 @@ Routes.finance = function () {
   $v("fnPrint").onclick = () => window.print();
   $v("fnReset").onclick = () => { localStorage.removeItem(FIN_KEY); Routes.finance(); };
   render();
+};
+
+// תזכורת בדף הבית: אם עברו 90 יום מתמונת המצב האחרונה (או שיש פרופיל בלי תמונה)
+window.financeReminder = function (el) {
+  if (!el) return;
+  let h = [], prof = null;
+  try { h = JSON.parse(localStorage.getItem("ia-finance-history")) || []; prof = localStorage.getItem("ia-finance"); } catch (e) { return; }
+  const parse = x => x.ts || (() => { const m = /(\d+)\.(\d+)\.(\d+)/.exec(x.date || ""); return m ? new Date(+m[3], +m[2] - 1, +m[1]).getTime() : 0; })();
+  if (!h.length) {
+    if (prof) el.innerHTML = '<a class="card today-card" href="#finance"><div class="small muted">💸 התנהלות כספית</div><b>שמרו תמונת מצב ראשונה, כדי שאפשר יהיה לראות התקדמות</b></a>';
+    return;
+  }
+  const last = parse(h[h.length - 1]), days = Math.floor((Date.now() - last) / 86400000);
+  if (last && days >= 90) el.innerHTML = '<a class="card today-card" href="#finance"><div class="small muted">⏰ עברו ' + days + ' ימים מתמונת המצב האחרונה</div><b>זמן לבדיקה כספית: עדכנו נתונים ושמרו תמונה חדשה</b></a>';
 };

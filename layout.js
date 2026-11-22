@@ -55,6 +55,7 @@ Routes.home = function () {
     <a href="#progress"><b>${st} 🔥</b><span>ימי רצף</span></a>
   </div>
 
+  <div id="finReminder" class="mb"></div>
   <h2>היום</h2>
   <div class="today-row mb">
     <a class="card today-card" href="#practice"><div class="small muted">🧠 אימון יומי</div><h2 style="font-size:1.15rem;margin:6px 0">${due ? `${due} שאלות מחכות` : "חזרה מרווחת"}</h2><p class="small muted">5 דקות ביום ששומרות על מה שלמדת.</p><span class="btn small">לאימון ←</span></a>
@@ -84,6 +85,7 @@ Routes.home = function () {
 
   if (window.weeklyTeaser) weeklyTeaser($("#weeklyTeaser"));
   if (window.newsTeaser) newsTeaser($("#newsTeaser"));
+  if (window.financeReminder) financeReminder($("#finReminder"));
   $$(".track").forEach(b => b.onclick = () => {
     State.data.track = b.dataset.track; State.save();
     toast(`נבחר: ${TRACKS[b.dataset.track].name}`);
