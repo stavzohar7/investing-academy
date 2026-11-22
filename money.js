@@ -4,7 +4,7 @@
 // ===================================================================
 TITLES.money = "ניהול כסף";
 
-const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["mortgage", "🏠 משכנתא והלוואה"], ["inflation", "📉 אינפלציה"]];
+const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["mortgage", "🏠 משכנתא והלוואה"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"]];
 const MV = {};   // תצוגות הכלים
 
 Routes.money = function (tab) {
@@ -187,5 +187,54 @@ MV.inflation = function (el) {
       <p class="small muted">חישוב פשוט: אינפלציה ותשואה קבועות, בלי מס. בפועל שתיהן משתנות משנה לשנה.</p>`;
   };
   ["miAmount", "miInfl", "miYears", "miRet"].forEach(id => document.getElementById(id).addEventListener("input", calc));
+  calc();
+};
+
+// ---------- יציאה מהבית ----------
+MV.moveout = function (el) {
+  const s = mLoad("moveout", { income: 8500, now: 4200, people: 1, rent: 3800, arnona: 450, elec: 250, net: 100, food: 1500, trans: 600, phone: 100, social: 1200, other: 800, setup: 25000, months: 3 });
+  el.innerHTML = `<div class="grid grid-2">
+    <section class="card" aria-labelledby="moT"><h2 id="moT">המצב היום</h2>
+      ${mField("moIncome", "הכנסה נטו חודשית (₪)", s.income, 'min="0" step="100"')}
+      ${mField("moNow", "ההוצאות החודשיות שלכם היום (₪)", s.now, 'min="0" step="100"')}
+      <h3>התקציב החודשי של החיים בחוץ (לכל המשק)</h3>
+      ${mField("moRent", "שכר דירה (₪)", s.rent, 'min="0" step="100"')}
+      ${mField("moArnona", "ארנונה ומים (₪)", s.arnona, 'min="0" step="50"')}
+      ${mField("moElec", "חשמל וגז (₪)", s.elec, 'min="0" step="50"')}
+      ${mField("moNet", "אינטרנט (₪)", s.net, 'min="0" step="10"')}
+      ${mField("moPeople", "כמה אנשים חולקים את הדירה (שכר דירה וחשבונות מתחלקים)", s.people, 'min="1" max="6" step="1"')}
+      <h3>הוצאות אישיות</h3>
+      ${mField("moFood", "מזון וצריכה ביתית (₪)", s.food, 'min="0" step="100"')}
+      ${mField("moTrans", "תחבורה (₪)", s.trans, 'min="0" step="50"')}
+      ${mField("moPhone", "טלפון (₪)", s.phone, 'min="0" step="10"')}
+      ${mField("moSocial", "בילויים וחברה (₪)", s.social, 'min="0" step="100"')}
+      ${mField("moOther", "שונות (₪)", s.other, 'min="0" step="100"')}
+      <h3>הקמה וכרית</h3>
+      ${mField("moSetup", "הקמה: פיקדון, ריהוט ועוד (₪, חד-פעמי)", s.setup, 'min="0" step="1000"')}
+      ${mField("moMonths", "כמה חודשי הוצאות לכרית ביטחון", s.months, 'min="1" max="12" step="1"')}
+    </section>
+    <section class="card" aria-labelledby="moO" aria-live="polite"><h2 id="moO">התוצאה</h2><div id="moRes"></div></section></div>`;
+  const calc = () => {
+    const v = { income: mNum("moIncome"), now: mNum("moNow"), people: Math.max(1, Math.round(mNum("moPeople"))), rent: mNum("moRent"), arnona: mNum("moArnona"), elec: mNum("moElec"), net: mNum("moNet"), food: mNum("moFood"), trans: mNum("moTrans"), phone: mNum("moPhone"), social: mNum("moSocial"), other: mNum("moOther"), setup: mNum("moSetup"), months: Math.max(1, mNum("moMonths")) };
+    mSave("moveout", v);
+    if (!v.income) { document.getElementById("moRes").innerHTML = '<p class="muted">הזינו הכנסה.</p>'; return; }
+    const shared = (v.rent + v.arnona + v.elec + v.net) / v.people, rentMine = v.rent / v.people;
+    const total = shared + v.food + v.trans + v.phone + v.social + v.other;
+    const rentPct = rentMine / v.income, totalPct = total / v.income, gap = total - v.now, nowSave = v.income - v.now, outSave = v.income - total;
+    const efTarget = total * v.months, fund = efTarget + v.setup, mo = nowSave > 0 ? Math.ceil(fund / nowSave) : null;
+    const ok = outSave >= 0;
+    document.getElementById("moRes").innerHTML = `
+      <ul><li><b>תקציב חודשי בחוץ: ${fmt(total)} ₪</b> (${fmt(totalPct * 100, 1)}% מההכנסה)</li>
+      <li>החלק שלכם בשכר הדירה: ${fmt(rentMine)} ₪ (${fmt(rentPct * 100, 1)}% מההכנסה) ${rentPct > 1 / 3 ? '<span class="bad">— מעל כלל האצבע של שליש</span>' : '<span class="good">— בתוך כלל האצבע של שליש</span>'}</li>
+      <li>מצב היום: מוציאים ${fmt(v.now)} ₪ וחוסכים ${fmt(nowSave)} ₪ בחודש</li>
+      <li>אחרי היציאה: ${ok ? `נשארים ${fmt(outSave)} ₪ לחיסכון` : `<span class="bad">חסרים ${fmt(-outSave)} ₪ בחודש</span>`}</li></ul>
+      ${ok ? "" : `<p class="bad">בתנאים האלה אי אפשר לצאת בלי חוב. אפשרויות: שותפים, אזור זול יותר, הכנסה גבוהה יותר, קיצוץ רצוניות — או לחכות ולצבור.</p>`}
+      <h3>שכר דירה וירטואלי</h3>
+      <p>ההפרש בין תקציב החיים בחוץ להוצאות היום הוא <b>${fmt(gap)} ₪ בחודש</b>. ${gap > 0 ? (nowSave >= gap ? `אתם יכולים להעביר אותו לחיסכון מדי חודש (נשארים ${fmt(nowSave - gap)} ₪) — ובכך להתרגל לתקציב החדש ולצבור קרן.` : `היום אתם חוסכים ${fmt(nowSave)} ₪, כלומר פחות מההפרש — סימן שהחיים בחוץ עדיין לא ממומנים.`) : "הוצאות היציאה נמוכות מהיום."}</p>
+      <h3>קרן ליציאה</h3>
+      <p>כרית של ${v.months} חודשים: ${fmt(efTarget)} ₪ + הקמה ${fmt(v.setup)} ₪ = <b>${fmt(fund)} ₪</b>. ${mo ? `בחיסכון של ${fmt(nowSave)} ₪ בחודש: כ-<b>${mo} חודשים</b> (כ-${fmt(mo / 12, 1)} שנים).` : "כדי לצבור צריך חיסכון חודשי חיובי."}</p>
+      <p class="small muted">חישוב פשוט, בלי מס, אינפלציה או שינויי שכר. כלל האצבע של שליש לשכר דירה הוא הנחיה, לא חוק.</p>`;
+  };
+  ["moIncome", "moNow", "moPeople", "moRent", "moArnona", "moElec", "moNet", "moFood", "moTrans", "moPhone", "moSocial", "moOther", "moSetup", "moMonths"].forEach(id => document.getElementById(id).addEventListener("input", calc));
   calc();
 };

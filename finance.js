@@ -26,7 +26,7 @@ Routes.finance = function () {
 
     <div class="grid grid-2">
       <section class="card" aria-labelledby="fnP"><h2 id="fnP">1. מי אתם</h2>
-        <div class="field"><label for="fnStatus">מצב משפחתי</label><select id="fnStatus"><option value="single">רווק/ה</option><option value="couple">נשוי/ה או בזוגיות</option><option value="single_parent">הורה יחיד/ה</option></select></div>
+        <div class="field"><label for="fnStatus">מצב משפחתי</label><select id="fnStatus"><option value="single">רווק/ה</option><option value="couple">נשוי/ה או בזוגיות</option><option value="single_parent">הורה יחיד/ה</option><option value="parents">גר/ה בבית ההורים</option></select></div>
         <div class="field"><label for="fnKids">מספר ילדים</label><input id="fnKids" type="number" inputmode="numeric" min="0" max="10" step="1"></div>
         <div class="field"><label for="fnAge">גיל</label><input id="fnAge" type="number" inputmode="numeric" min="16" max="90" step="1"></div>
         <div class="field"><label for="fnWork">סוג תעסוקה</label><select id="fnWork"><option value="employee">שכיר/ה</option><option value="self">עצמאי/ת או הכנסה לא קבועה</option></select></div>
@@ -90,6 +90,7 @@ Routes.finance = function () {
     const surplus = v.income - v.expenses, rate = surplus / v.income;
     const netWorth = v.cash + v.invested + v.pension - v.debtHi - v.debtOther;
     const dependents = v.kids > 0 || v.status === "couple";
+    const young = v.status === "parents";
     let target = v.kids > 0 ? 6 : v.status === "couple" ? 4 : 3;
     if (v.work === "self") target = Math.max(target, 6);
     const efNeed = target * v.expenses, efHave = v.expenses ? v.cash / v.expenses : 0;
@@ -118,6 +119,10 @@ Routes.finance = function () {
     if (canInvest && surplus > 0) {
       const unplaced = Math.max(0, surplus - v.monthlyInvest);
       steps.push({ t: "good", h: "להשקיע לפי תוכנית כתובה", p: `כרית בסיסית קיימת ואין חוב יקר, אז אפשר לשקול השקעה לטווח ארוך — בפיזור (למשל קרן מדד זולה), לפי תוכנית כתובה (IPS) ולפי סבלנות לירידות.${unplaced > 0 ? ` שימו לב: ${fmt(unplaced)} ₪ בחודש נשארים ללא ייעוד — האם הם יושבים בעו"ש?` : ""} אל תשקיעו כסף שדרוש בשנתיים-שלוש הקרובות.`, l: ["מבחן קיצון לתיק", "#portfolio"] });
+    }
+    if (young) {
+      steps.unshift({ t: rate >= .30 ? "good" : "mid", h: "לנצל את החלון: שיעור חיסכון גבוה בזמן שגרים בבית", p: `שיעור החיסכון שלכם ${fmt(rate * 100, 1)}%. בזמן שההוצאות נמוכות, חיסכון של 30% ומעלה הוא בר-השגה — והכסף נהנה מהכי הרבה שנים של ריבית דריבית. בדוגמה: 1,500 ₪ בחודש מגיל 24 במקום 34 שווים כ-1.77 מיליון ₪ יותר ב-43 שנה (בתשואה של 6%, הנחה).`, l: ["לשיעור לצעירים", "#lesson/lf-5"] });
+      steps.push({ t: "mid", h: "לתכנן את היציאה מהבית", p: "חשבו את תקציב החיים בחוץ (שכר דירה, חשבונות, מזון) לפני שמחליטים. אם הוא קרוב או מעל ההכנסה — שותפים, הכנסה גבוהה יותר או המתנה. 'שכר דירה וירטואלי': הפקידו את ההפרש לחיסכון עוד עכשיו, כדי להתרגל ולצבור קרן.", l: ["מחשבון יציאה מהבית", "#money/moveout"] });
     }
     if (v.age >= 50) steps.push({ t: "mid", h: "ככל שמתקרבים לפרישה — סיכון הרצף", p: "ירידה חדה סמוך לפרישה פוגעת יותר מירידה בגיל צעיר. בדקו את ההקצאה ואת תוכנית המשיכה לפני שמתחילים למשוך.", l: ["סיכון הרצף בכלי התיק", "#portfolio"] });
 
