@@ -4,14 +4,14 @@
 // ===================================================================
 TITLES.money = "ניהול כסף";
 
-const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["mortgage", "🏠 משכנתא והלוואה"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"]];
+const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["mortgage", "🏠 משכנתא והלוואה"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"], ["delay", "⏳ עלות ההמתנה"], ["credit", "💳 עלות אשראי"]];
 const MV = {};   // תצוגות הכלים
 
 Routes.money = function (tab) {
   tab = MV[tab] ? tab : "budget";
   app().innerHTML = `
     <h1>💰 ניהול כסף</h1>
-    <p class="muted">שלושה כלים פשוטים שעוזרים להבין לאן הכסף הולך, איך לסגור חובות, ואיך להגיע ליעד. הערכים נשמרים בדפדפן שלכם בלבד. <a href="#path">לשלב "ניהול כסף אישי" בקורס</a></p>
+    <p class="muted">כלים פשוטים שעוזרים להבין לאן הכסף הולך, איך לסגור חובות, ואיך להגיע ליעד. הערכים נשמרים בדפדפן שלכם בלבד. <a href="#path">לשלב "ניהול כסף אישי" בקורס</a></p>
     <div class="tabs" role="tablist" aria-label="כלי ניהול כסף">${MONEY_TABS.map(t => `<button role="tab" aria-selected="${t[0] === tab}" class="${t[0] === tab ? "active" : ""}" onclick="go('money/${t[0]}')">${t[1]}</button>`).join("")}</div>
     <div id="moneyBody" class="mt"></div>
     <p class="small muted mt">התוכן לימודי בלבד ואינו ייעוץ פיננסי, פנסיוני או מס.</p>`;
@@ -236,5 +236,81 @@ MV.moveout = function (el) {
       <p class="small muted">חישוב פשוט, בלי מס, אינפלציה או שינויי שכר. כלל האצבע של שליש לשכר דירה הוא הנחיה, לא חוק.</p>`;
   };
   ["moIncome", "moNow", "moPeople", "moRent", "moArnona", "moElec", "moNet", "moFood", "moTrans", "moPhone", "moSocial", "moOther", "moSetup", "moMonths"].forEach(id => document.getElementById(id).addEventListener("input", calc));
+  calc();
+};
+
+// ---------- עלות ההמתנה ----------
+const mFV = (pmt, r, n) => r ? pmt * ((Math.pow(1 + r, n) - 1) / r) : pmt * n;
+MV.delay = function (el) {
+  const s = mLoad("delay", { pmt: 800, ret: 5, age: 25, stop: 67, wait: 5 });
+  el.innerHTML = `<div class="grid grid-2">
+    <section class="card" aria-labelledby="mwT"><h2 id="mwT">⏳ כמה עולה לדחות חיסכון?</h2>
+      ${mField("mwPmt", "הפקדה חודשית (₪)", s.pmt, 'min="0" step="100"')}
+      ${mField("mwRet", "תשואה שנתית משוערת (%)", s.ret, 'min="0" max="20" step="0.5"')}
+      ${mField("mwAge", "גיל היום", s.age, 'min="16" max="70" step="1"')}
+      ${mField("mwStop", "גיל היעד", s.stop, 'min="30" max="80" step="1"')}
+      ${mField("mwWait", "כמה שנים רוצים לדחות את ההתחלה", s.wait, 'min="0" max="30" step="1"')}
+      <p class="small muted">הדוגמה אינה תחזית. התשואה קבועה בהנחה, בלי מס, אינפלציה ודמי ניהול.</p></section>
+    <section class="card" aria-labelledby="mwO" aria-live="polite"><h2 id="mwO">התוצאה</h2><div id="mwRes"></div></section></div>`;
+  const calc = () => {
+    const v = { pmt: mNum("mwPmt"), ret: mNum("mwRet"), age: mNum("mwAge"), stop: mNum("mwStop"), wait: mNum("mwWait") };
+    mSave("delay", v);
+    const out = document.getElementById("mwRes"), r = v.ret / 100 / 12;
+    const nNow = Math.round((v.stop - v.age) * 12), nLate = Math.round((v.stop - v.age - v.wait) * 12);
+    if (nNow <= 0 || v.wait < 0 || nLate < 0) { out.innerHTML = '<p class="muted">גיל היעד חייב להיות גבוה מהגיל היום, והדחייה קצרה מהתקופה.</p>'; return; }
+    const now = mFV(v.pmt, r, nNow), late = mFV(v.pmt, r, nLate), dep = v.pmt * nNow, depLate = v.pmt * nLate;
+    const catchUp = nLate > 0 ? now / mFV(1, r, nLate) : null;
+    out.innerHTML = `
+      <ul><li>מתחילים היום: <b>${fmt(now)} ₪</b> בגיל ${v.stop} (הפקדות של ${fmt(dep)} ₪)</li>
+      <li>מתחילים בעוד ${v.wait} שנים: <b>${fmt(late)} ₪</b> (הפקדות של ${fmt(depLate)} ₪)</li>
+      <li>ההפרש: <b class="bad">${fmt(now - late)} ₪</b>, כשההפקדות עצמן נמוכות רק ב-${fmt(dep - depLate)} ₪. את רוב ההפרש יוצרת הריבית דריבית של השנים הראשונות.</li></ul>
+      ${catchUp && v.wait > 0 ? `<p>כדי להגיע לאותו סכום אחרי דחייה צריך להפקיד כ-<b>${fmt(catchUp)} ₪</b> בחודש, כלומר פי ${fmt(catchUp / v.pmt, 2)} מהיום.</p>` : ""}
+      <p class="small muted">המסקנה אינה "להשקיע הכול מיד": קודם כרית ביטחון וסגירת חוב ביוקר (ראו לשונית "חובות"). אבל כשהם מסודרים, כל שנה של דחייה יקרה.</p>`;
+  };
+  ["mwPmt", "mwRet", "mwAge", "mwStop", "mwWait"].forEach(id => document.getElementById(id).addEventListener("input", calc));
+  calc();
+};
+
+// ---------- עלות אשראי ----------
+// ריבית חודשית אפקטיבית מתוך סדרת תשלומים שווים (חיפוש בינארי)
+function mMonthlyRate(P, pmt, n) {
+  if (pmt * n <= P) return 0;
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 100; i++) { const m = (lo + hi) / 2, f = P * m / (1 - Math.pow(1 + m, -n)); if (f > pmt) hi = m; else lo = m; }
+  return (lo + hi) / 2;
+}
+MV.credit = function (el) {
+  const s = mLoad("credit", { price: 6000, n: 12, fee: 0, cash: 5700, od: 5000, odRate: 11, odMonths: 6 });
+  el.innerHTML = `<div class="grid grid-2">
+    <section class="card" aria-labelledby="mcT"><h2 id="mcT">🛍️ תשלומים מול מזומן</h2>
+      ${mField("mcPrice", "המחיר בתשלומים (סך הכול, ₪)", s.price, 'min="0" step="100"')}
+      ${mField("mcN", "מספר תשלומים", s.n, 'min="2" max="60" step="1"')}
+      ${mField("mcFee", "עמלה או תוספת חד-פעמית (₪)", s.fee, 'min="0" step="10"')}
+      ${mField("mcCash", "המחיר במזומן או בתשלום אחד (₪)", s.cash, 'min="0" step="100"')}
+      <div id="mcRes" aria-live="polite"></div></section>
+    <section class="card" aria-labelledby="mcO"><h2 id="mcO">🏦 משיכת יתר</h2>
+      ${mField("mcOd", "סכום המינוס הממוצע (₪)", s.od, 'min="0" step="500"')}
+      ${mField("mcOdRate", "ריבית שנתית על המינוס (%), מופיעה בדף החשבון", s.odRate, 'min="0" max="40" step="0.5"')}
+      ${mField("mcOdMonths", "כמה חודשים בשנה החשבון במינוס", s.odMonths, 'min="0" max="12" step="1"')}
+      <div id="mcOdRes" aria-live="polite"></div></section></div>
+    <p class="small muted mt">הכלי מראה את העלות. ההחלטה אם התשלומים שווים אותה היא שלכם. תנאי אשראי, עמלות וריביות משתנים בין גופים: בדקו בחוזה או בדף החשבון.</p>`;
+  const calc = () => {
+    const v = { price: mNum("mcPrice"), n: Math.max(2, Math.round(mNum("mcN"))), fee: mNum("mcFee"), cash: mNum("mcCash"), od: mNum("mcOd"), odRate: mNum("mcOdRate"), odMonths: mNum("mcOdMonths") };
+    mSave("credit", v);
+    const res = document.getElementById("mcRes"), diff = v.price + v.fee - v.cash;
+    if (v.cash > 0 && diff > 0) {
+      const pmt = (v.price + v.fee) / v.n, m = mMonthlyRate(v.cash, pmt, v.n), apr = (Math.pow(1 + m, 12) - 1) * 100;
+      res.innerHTML = `<p>בתשלומים משלמים <b>${fmt(diff)} ₪</b> יותר (${fmt(diff / v.cash * 100, 1)}%). תשלום חודשי: ${fmt(pmt)} ₪.</p>
+        <p>זה שקול לריבית של <b class="${apr > 8 ? "bad" : ""}">כ-${fmt(apr, 1)}% בשנה</b> על הכסף שלא שולם מראש. הקרן קטנה עם כל תשלום, ולכן הריבית האפקטיבית גבוהה ממה שנראה.</p>
+        <p class="small muted">תשלומים "ללא ריבית" עדיין יכולים לגלם עלות במחיר: זו ההשוואה שהכלי עושה.</p>`;
+    } else if (v.cash > 0) {
+      res.innerHTML = `<p class="good">אין הפרש בין התשלומים למזומן. שימו לב רק שאינכם מצטברים להתחייבויות חודשיות.</p>`;
+    } else res.innerHTML = `<p class="muted">הזינו מחיר במזומן להשוואה.</p>`;
+    const cost = v.od * v.odRate / 100 * Math.min(12, v.odMonths) / 12;
+    document.getElementById("mcOdRes").innerHTML = v.od > 0 ? `
+      <p>עלות ריבית משוערת בשנה: <b class="${cost > 0 ? "bad" : ""}">${fmt(cost)} ₪</b> (כ-${fmt(cost / 12)} ₪ בחודש בממוצע).</p>
+      <p class="small muted">חישוב פשוט, בלי עמלות ובלי שינוי בריבית. אם המינוס קבוע, שווה לבקש מהבנק בכתב הצעה להלוואה שסוגרת אותו ולהשוות את העלות הכוללת.</p>` : `<p class="muted">הזינו סכום מינוס.</p>`;
+  };
+  ["mcPrice", "mcN", "mcFee", "mcCash", "mcOd", "mcOdRate", "mcOdMonths"].forEach(id => document.getElementById(id).addEventListener("input", calc));
   calc();
 };
