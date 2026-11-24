@@ -22,16 +22,15 @@ Routes.finance = function () {
 
   app().innerHTML = `
     <h1>💸 התנהלות כספית</h1>
-    <p class="muted">ממלאים כמה פרטים — המצב המשפחתי, כמה יש עכשיו, כמה מזה מושקע וכמה נכנס ויוצא בחודש — ומקבלים תמונת מצב, סדר עדיפויות והקרנה לעתיד. הכול מחושב אצלכם בדפדפן ונשמר בו בלבד; שום נתון לא נשלח לשום מקום. זו מסגרת חשיבה לפי מה שנלמד באתר — <b>לא ייעוץ פיננסי</b>.</p>
+    <p class="muted">ממלאים כמה פרטים — איפה גרים, כמה יש עכשיו, כמה מזה מושקע וכמה נכנס ויוצא בחודש — ומקבלים תמונת מצב, סדר עדיפויות והקרנה לעתיד. הכול מחושב אצלכם בדפדפן ונשמר בו בלבד; שום נתון לא נשלח לשום מקום. זו מסגרת חשיבה לפי מה שנלמד באתר — <b>לא ייעוץ פיננסי</b>.</p>
 
     <div id="finHealth" class="mb"></div>
     <div class="grid grid-2">
       <section class="card" aria-labelledby="fnP"><h2 id="fnP">1. מי אתם</h2>
-        <div class="field"><label for="fnStatus">מצב משפחתי</label><select id="fnStatus"><option value="single">רווק/ה</option><option value="couple">נשוי/ה או בזוגיות</option><option value="single_parent">הורה יחיד/ה</option><option value="parents">גר/ה בבית ההורים</option></select></div>
-        <div class="field"><label for="fnKids">מספר ילדים</label><input id="fnKids" type="number" inputmode="numeric" min="0" max="10" step="1"></div>
+        <div class="field"><label for="fnStatus">מגורים</label><select id="fnStatus"><option value="single">גר/ה לבד או עם שותפים</option><option value="parents">גר/ה בבית ההורים</option></select></div>
+        <input id="fnKids" type="hidden" value="0">
         <div class="field"><label for="fnAge">גיל</label><input id="fnAge" type="number" inputmode="numeric" min="16" max="90" step="1"></div>
         <div class="field"><label for="fnWork">סוג תעסוקה</label><select id="fnWork"><option value="employee">שכיר/ה</option><option value="self">עצמאי/ת או הכנסה לא קבועה</option></select></div>
-        <p class="small muted">בזוגיות: הזינו נתוני משק הבית יחד (הכנסה והוצאות משותפות, נכסים וחובות של שניכם).</p>
       </section>
       <section class="card" aria-labelledby="fnM"><h2 id="fnM">2. כל חודש</h2>
         <div class="field"><label for="fnIncome">הכנסה נטו חודשית (₪)</label><input id="fnIncome" type="number" inputmode="numeric" min="0" step="100"></div>
@@ -74,11 +73,13 @@ Routes.finance = function () {
   const $v = id => document.getElementById(id);
   const ids = { status: "fnStatus", kids: "fnKids", age: "fnAge", work: "fnWork", income: "fnIncome", expenses: "fnExpenses", monthlyInvest: "fnMonthlyInvest", cash: "fnCash", invested: "fnInvested", pension: "fnPension", debtHi: "fnDebtHi", debtHiRate: "fnDebtHiRate", debtOther: "fnDebtOther", retire: "fnRetire", ret: "fnRet" };
   Object.entries(ids).forEach(([k, id]) => { $v(id).value = s[k]; });
+  if ($v("fnStatus").value !== "parents") $v("fnStatus").value = "single";   // האתר מתמקד ברווקים וצעירים
+  $v("fnKids").value = 0;
 
   function read() {
     const v = {};
     Object.entries(ids).forEach(([k, id]) => { v[k] = (k === "status" || k === "work") ? $v(id).value : (+$v(id).value || 0); });
-    v.kids = Math.max(0, Math.round(v.kids)); return v;
+    v.kids = 0; return v;
   }
 
   function render() {
