@@ -1,5 +1,5 @@
 // ===================================================================
-//  🩺 בדיקת בריאות פיננסית: 12 שאלות, ציון בכל תחום וסדר עדיפויות לתיקון
+//  🩺 בדיקת בריאות פיננסית: 10 שאלות, ציון בכל תחום וסדר עדיפויות לתיקון
 //  כלי לימוד בלבד. הציון מבוסס על כללי אצבע מקובלים ואינו אבחון או ייעוץ.
 // ===================================================================
 TITLES.health = "בדיקת בריאות פיננסית";
@@ -9,7 +9,6 @@ const HEALTH_DOMAINS = {
   debt: { name: "חובות", icon: "💳", link: "money/debt", linkText: "מחשבון חובות", weak: "חוב בריבית גבוהה גוזל כסף בכל חודש. סגירה שלו היא לרוב ה'תשואה' הבטוחה ביותר שיש.", ok: "החובות בשליטה." },
   budget: { name: "תקציב וחיסכון", icon: "🧾", link: "money/budget", linkText: "מתכנן תקציב", weak: "לא ברור לאן הכסף הולך או כמה נשאר בסוף החודש. תקציב פשוט נותן שליטה.", ok: "אתם יודעים לאן הכסף הולך וחוסכים." },
   pension: { name: "פנסיה וטווח ארוך", icon: "🏛️", link: "compare", linkText: "השוואת עלויות", weak: "חיסכון ארוך טווח הוא התחום שבו הזמן עובד בשבילכם. שווה לבדוק הפקדות ודמי ניהול.", ok: "יש חיסכון ארוך טווח שאתם עוקבים אחריו." },
-  insurance: { name: "ביטוחים", icon: "🛡️", link: "finance", linkText: "תמונת מצב כספית", weak: "ביטוח נועד להגן מאירוע שהכרית אינה מכסה. שווה לבדוק מה מכוסה ומה לא, ולהשוות הצעות בכתב.", ok: "ההגנות מסודרות ונבדקו." },
   plan: { name: "תכנון ומעקב", icon: "🎯", link: "finance", linkText: "תוכנית 12 חודשים", weak: "בלי מטרה כתובה וחזרה קבועה קשה להתקדם. מטרה אחת ובדיקה אחת בשלושה חודשים מספיקות להתחלה.", ok: "יש לכם מטרה ובדיקה קבועה." }
 };
 
@@ -23,13 +22,11 @@ const HEALTH_Q = [
   { d: "budget", q: "איזה חלק מההכנסה נטו נשאר בסוף החודש לחיסכון?", o: ["אני במינוס או על הקצה", "עד 5%", "5% עד 15%", "מעל 15%"] },
   { d: "pension", q: "האם יש הפקדות שוטפות לפנסיה או לחיסכון ארוך טווח?", o: ["לא, או שאיני יודע", "יש, אבל מעולם לא בדקתי פרטים", "יש, ובדקתי את ההפקדות בשנה האחרונה", "יש, וגם מעקב אחר סכום, מסלול ועלויות"] },
   { d: "pension", q: "האם אתם יודעים מה דמי הניהול שאתם משלמים על החיסכון הארוך?", o: ["לא יודע מה זה", "שמעתי, לא בדקתי", "יודע בערך", "בדקתי והשוויתי בכתב"] },
-  { d: "insurance", q: "האם יש לכם הגנות בסיסיות לפי המצב שלכם (בריאות, אובדן כושר עבודה, חיים אם יש תלויים)?", o: ["לא יודע מה יש לי", "יש משהו, לא בטוח מה", "יש ברוב התחומים הרלוונטיים", "יש, ובדוק שמתאים למצב"] },
-  { d: "insurance", q: "מתי בפעם האחרונה עברתם על הביטוחים והשוויתם הצעות?", o: ["אף פעם", "לפני יותר מ-3 שנים", "בשלוש השנים האחרונות", "בשנה האחרונה"] },
   { d: "plan", q: "האם יש לכם מטרה כספית כתובה, עם סכום ותאריך?", o: ["אין", "יש בראש", "כתובה, בלי תוכנית חודשית", "כתובה, עם הפקדה חודשית"] },
   { d: "plan", q: "מתי בפעם האחרונה עצרתם לבדוק את המצב הכספי הכולל שלכם?", o: ["אף פעם", "לפני יותר משנה", "בחצי השנה האחרונה", "ב-3 החודשים האחרונים"] }
 ];
 
-const healthLoad = () => { try { const x = JSON.parse(localStorage.getItem("ia-health")); if (x && Array.isArray(x.ans)) return x; } catch (e) { /* ignore */ } return { ans: Array(HEALTH_Q.length).fill(null), hist: [] }; };
+const healthLoad = () => { try { const x = JSON.parse(localStorage.getItem("ia-health")); if (x && Array.isArray(x.ans)) { if (x.ans.length !== HEALTH_Q.length) x.ans = Array(HEALTH_Q.length).fill(null); if (!Array.isArray(x.hist)) x.hist = []; return x; } } catch (e) { /* ignore */ } return { ans: Array(HEALTH_Q.length).fill(null), hist: [] }; };
 
 function healthScore(ans) {
   const dom = {};
@@ -43,12 +40,12 @@ Routes.health = function () {
   const st = healthLoad();
   app().innerHTML = `
     <h1>🩺 בדיקת בריאות פיננסית</h1>
-    <p class="muted">שתים-עשרה שאלות, בערך שלוש דקות. בסוף מקבלים ציון בכל תחום ושלושה צעדים לפי סדר עדיפויות, עם קישור לכלי המתאים באתר. אין תשובה "נכונה": המטרה היא לראות איפה כדאי להתחיל.</p>
+    <p class="muted">עשר שאלות, בערך שלוש דקות. בסוף מקבלים ציון בכל תחום ושלושה צעדים לפי סדר עדיפויות, עם קישור לכלי המתאים באתר. אין תשובה "נכונה": המטרה היא לראות איפה כדאי להתחיל.</p>
     <div class="box warn"><b>כלי לימוד כללי, לא אבחון ולא ייעוץ.</b> הציון מבוסס על כללי אצבע מקובלים (למשל כרית של שלושה עד שישה חודשי הוצאות) שאינם מתאימים לכל מצב. התשובות נשמרות בדפדפן שלכם בלבד.</div>
     <form id="hForm" class="mt">${HEALTH_Q.map((q, i) => `<fieldset class="q card mb"><legend><b>${i + 1}. ${esc(q.q)}</b> <span class="small muted">(${HEALTH_DOMAINS[q.d].icon} ${HEALTH_DOMAINS[q.d].name})</span></legend>${q.o.map((o, k) => `<label class="opt-row"><input type="radio" name="hq${i}" value="${k}" ${st.ans[i] === k ? "checked" : ""}> <span>${esc(o)}</span></label>`).join("")}</fieldset>`).join("")}</form>
     <section class="card" aria-labelledby="hR" aria-live="polite"><h2 id="hR">התוצאה</h2><div id="hRes"></div></section>
     <section class="card mt" aria-labelledby="hH"><h2 id="hH">ההיסטוריה שלי</h2><div id="hHist"></div></section>
-    <p class="small muted mt">התוכן לימודי בלבד ואינו ייעוץ פיננסי, פנסיוני, ביטוחי או מס.</p>`;
+    <p class="small muted mt">התוכן לימודי בלבד ואינו ייעוץ פיננסי, פנסיוני או מס.</p>`;
 
   const save = () => { try { localStorage.setItem("ia-health", JSON.stringify(st)); } catch (e) { /* ignore */ } };
   const level = p => p >= 75 ? ["יציב", "good"] : p >= 45 ? ["בדרך", ""] : ["בונים בסיס", "bad"];
@@ -63,7 +60,7 @@ Routes.health = function () {
     const sc = healthScore(st.ans), lv = level(sc.total);
     const rows = Object.entries(HEALTH_DOMAINS).map(([k, d]) => ({ k, d, p: Math.round(sc.dom[k].pts / sc.dom[k].max * 100) }));
     // סדר עדיפויות קבוע: קודם חוב וכרית (הגנה), אחר כך שאר התחומים; רק תחומים מתחת ל-75
-    const order = ["debt", "cushion", "budget", "insurance", "pension", "plan"];
+    const order = ["debt", "cushion", "budget", "pension", "plan"];
     const steps = rows.filter(r => r.p < 75).sort((a, b) => order.indexOf(a.k) - order.indexOf(b.k)).slice(0, 3);
     out.innerHTML = `
       <p style="font-size:1.6rem;margin:.2em 0"><b class="${lv[1]}">${sc.total}</b> <span class="small muted">מתוך 100 · ${lv[0]}</span></p>

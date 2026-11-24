@@ -4,7 +4,7 @@
 // ===================================================================
 TITLES.money = "ניהול כסף";
 
-const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["mortgage", "🏠 משכנתא והלוואה"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"], ["delay", "⏳ עלות ההמתנה"], ["credit", "💳 עלות אשראי"], ["annual", "📅 הוצאות שנתיות"], ["fees", "💸 דמי ניהול"], ["insurance", "🛡️ ביטוחים"]];
+const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["mortgage", "🏠 משכנתא והלוואה"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"], ["delay", "⏳ עלות ההמתנה"], ["credit", "💳 עלות אשראי"], ["annual", "📅 הוצאות שנתיות"], ["fees", "💸 דמי ניהול"]];
 const MV = {};   // תצוגות הכלים
 
 Routes.money = function (tab) {
@@ -382,29 +382,4 @@ MV.fees = function (el) {
   };
   ["mfStart", "mfPmt", "mfYears", "mfRet", "mfFeeA", "mfFeeB", "mfDepA", "mfDepB"].forEach(id => document.getElementById(id).addEventListener("input", calc));
   calc();
-};
-
-// ---------- ביטוחים: מה לבדוק ----------
-const INS_GROUPS = [
-  ["כללי לכל ביטוח", ["אני יודע מה בדיוק מכוסה ומה החריגים בפוליסה.", "אני יודע מה ההשתתפות העצמית או תקופת ההמתנה.", "בדקתי שאין כפל ביטוח על אותו סיכון (למשל דרך עבודה, בנק או כרטיס אשראי).", "אני יודע מי רשום כמוטב בפוליסות שיש בהן מוטב.", "השוויתי הצעות בכתב בשלוש השנים האחרונות."]],
-  ["בריאות ואובדן כושר עבודה", ["אני יודע איזה כיסוי בריאות יש לי מעבר לזה הבסיסי, ומאיפה הוא מגיע.", "אני יודע אם יש לי כיסוי למקרה שאפסיק לעבוד בגלל מחלה או תאונה, ומה גובה הפיצוי החודשי."]],
-  ["משפחה ותלויים", ["אם יש מי שתלוי בהכנסה שלי, בדקתי אם יש כיסוי למקרה פטירה ומה הסכום.", "הסכום מתאים להתחייבויות כמו משכנתא ולימודי ילדים."]],
-  ["רכוש", ["בדקתי שביטוח הדירה מכסה את מה שחשוב (מבנה ותכולה) ובאילו סכומים.", "בדקתי את ביטוח הרכב: סוג הכיסוי, השתתפות עצמית ומה כלול."]]
-];
-const insLoad = () => { try { return JSON.parse(localStorage.getItem("ia-ins")) || {}; } catch (e) { return {}; } };
-MV.insurance = function (el) {
-  const done = insLoad(), all = INS_GROUPS.reduce((a, g) => a + g[1].length, 0);
-  let k = 0;
-  el.innerHTML = `<section class="card" aria-labelledby="miN"><h2 id="miN">🛡️ רשימת בדיקה לביטוחים</h2>
-    <p class="muted">הרשימה אינה ממליצה לקנות או לבטל ביטוח. היא שאלות שכדאי לדעת עליהן תשובה, כדי שתוכלו לדבר עם סוכן או חברה בצורה מושכלת. התשובות נשמרות בדפדפן שלכם בלבד.</p>
-    <p aria-live="polite"><b id="insCount"></b></p></section>
-    ${INS_GROUPS.map(g => `<section class="card mt"><h3>${g[0]}</h3>${g[1].map(t => { const i = k++; return `<label class="opt-row"><input type="checkbox" data-i="${i}" ${done[i] ? "checked" : ""}> <span>${esc(t)}</span></label>`; }).join("")}</section>`).join("")}
-    <p class="small muted mt">מה שלא סימנתם הוא רשימת שאלות לסוכן, לחברה או לבדיקה במסמכים. ייעוץ ביטוחי אישי נותנים יועצים מורשים בלבד.</p>`;
-  const count = () => { document.getElementById("insCount").textContent = `סימנתם ${Object.keys(insLoad()).length} מתוך ${all}`; };
-  el.querySelectorAll("input[type=checkbox]").forEach(c => c.onchange = () => {
-    const d = insLoad(); if (c.checked) d[c.dataset.i] = true; else delete d[c.dataset.i];
-    try { localStorage.setItem("ia-ins", JSON.stringify(d)); } catch (e) { /* ignore */ }
-    count();
-  });
-  count();
 };
