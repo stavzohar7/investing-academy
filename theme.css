@@ -151,3 +151,7 @@ html.a11y-still .avatar.talk { animation: none; }
 
 .opt-row { display: block; padding: 6px 0; cursor: pointer; }
 .opt-row input { margin-inline-end: 8px; }
+
+/* באנר בדיקת בריאות פיננסית בראש דף הבית */
+.health-banner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;text-decoration:none;color:inherit;border:2px solid var(--accent,#1b7f5c)}
+.health-banner>span:nth-child(2){flex:1;min-width:200px}
