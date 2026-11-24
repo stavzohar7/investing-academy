@@ -4,7 +4,7 @@
 // ===================================================================
 TITLES.money = "ניהול כסף";
 
-const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["mortgage", "🏠 משכנתא והלוואה"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"], ["delay", "⏳ עלות ההמתנה"], ["credit", "💳 עלות אשראי"]];
+const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["mortgage", "🏠 משכנתא והלוואה"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"], ["delay", "⏳ עלות ההמתנה"], ["credit", "💳 עלות אשראי"], ["annual", "📅 הוצאות שנתיות"]];
 const MV = {};   // תצוגות הכלים
 
 Routes.money = function (tab) {
@@ -312,5 +312,35 @@ MV.credit = function (el) {
       <p class="small muted">חישוב פשוט, בלי עמלות ובלי שינוי בריבית. אם המינוס קבוע, שווה לבקש מהבנק בכתב הצעה להלוואה שסוגרת אותו ולהשוות את העלות הכוללת.</p>` : `<p class="muted">הזינו סכום מינוס.</p>`;
   };
   ["mcPrice", "mcN", "mcFee", "mcCash", "mcOd", "mcOdRate", "mcOdMonths"].forEach(id => document.getElementById(id).addEventListener("input", calc));
+  calc();
+};
+
+// ---------- הוצאות שנתיות: כמה לשים בצד כל חודש ----------
+MV.annual = function (el) {
+  const s = mLoad("annual", { rows: [["ביטוח רכב", 3200, 3], ["טיפול ורישוי רכב", 2500, 6], ["חופשה", 8000, 8], ["חגים ומתנות", 3000, 9], ["ציוד לבית ותיקונים", 2400, 12]] });
+  const names = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
+  el.innerHTML = `<div class="grid grid-2">
+    <section class="card" aria-labelledby="maT"><h2 id="maT">📅 הוצאות שמגיעות פעם בשנה</h2>
+      <p class="small muted">הוצאות שאינן חודשיות מפתיעות את התקציב. מחלקים כל אחת ל-12, מפקידים בכל חודש לחשבון נפרד, ואז החשבון מכסה אותה כשהיא מגיעה.</p>
+      <div class="table-wrap"><table><caption class="sr-only">הוצאות שנתיות</caption><thead><tr><th scope="col">הוצאה</th><th scope="col">סכום (₪)</th><th scope="col">חודש תשלום</th></tr></thead>
+      <tbody>${s.rows.map((r, i) => `<tr><td><input aria-label="שם הוצאה ${i + 1}" id="maN${i}" value="${esc(r[0])}"></td><td><input aria-label="סכום הוצאה ${i + 1}" id="maA${i}" type="number" inputmode="decimal" min="0" step="100" value="${r[1]}"></td><td><select aria-label="חודש תשלום ${i + 1}" id="maM${i}">${names.map((n, k) => `<option value="${k + 1}" ${k + 1 === r[2] ? "selected" : ""}>${n}</option>`).join("")}</select></td></tr>`).join("")}</tbody></table></div>
+    </section>
+    <section class="card" aria-labelledby="maO" aria-live="polite"><h2 id="maO">התוצאה</h2><div id="maRes"></div></section></div>`;
+  const calc = () => {
+    const rows = s.rows.map((_, i) => [document.getElementById("maN" + i).value, mNum("maA" + i), +document.getElementById("maM" + i).value]);
+    mSave("annual", { rows });
+    const total = rows.reduce((a, r) => a + r[1], 0), perMonth = total / 12;
+    const cur = new Date().getMonth() + 1;
+    // בכמה חודשים כל הוצאה מגיעה (1..12) ומה ההפקדה החודשית הנדרשת כדי לכסות אותה בזמן
+    const due = rows.filter(r => r[1] > 0).map(r => { const left = ((r[2] - cur + 12) % 12) || 12; return { name: r[0], amt: r[1], left, need: r[1] / left }; }).sort((a, b) => a.left - b.left);
+    const next = due[0];
+    document.getElementById("maRes").innerHTML = total ? `
+      <p>סך ההוצאות השנתיות: <b>${fmt(total)} ₪</b>. לשים בצד: <b>${fmt(perMonth)} ₪ בחודש</b>.</p>
+      <p class="small muted">${next ? `ההוצאה הקרובה: ${esc(next.name)} ${next.left === 1 ? "בעוד חודש" : "בעוד " + next.left + " חודשים"}. אם עוד לא התחלתם לחסוך לה, כדי לכסות אותה בזמן צריך להפקיד ${fmt(next.need)} ₪ בחודש עד אז. מכאן והלאה ההפקדה הקבועה תכסה אותה.` : ""}</p>
+      <div class="table-wrap"><table><caption class="sr-only">מועד ההוצאות</caption><thead><tr><th scope="col">הוצאה</th><th scope="col">בעוד (חודשים)</th><th scope="col">סכום</th></tr></thead>
+      <tbody>${due.map(d => `<tr><th scope="row">${esc(d.name)}</th><td>${d.left}</td><td>${fmt(d.amt)}</td></tr>`).join("")}</tbody></table></div>
+      <p class="small muted">הסכום החודשי מחושב בחלוקה שווה לכל השנה, בלי ריבית ובלי אינפלציה. כדאי להוסיף כרית קטנה כי מחירים עולים. את הכסף כדאי להחזיק בפיקדון או בחשבון נזיל, לא במניות.</p>` : `<p class="muted">הזינו לפחות הוצאה שנתית אחת.</p>`;
+  };
+  el.querySelectorAll("input, select").forEach(i => i.addEventListener("input", calc));
   calc();
 };
