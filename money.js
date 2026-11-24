@@ -4,7 +4,7 @@
 // ===================================================================
 TITLES.money = "ניהול כסף";
 
-const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["mortgage", "🏠 משכנתא והלוואה"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"], ["delay", "⏳ עלות ההמתנה"], ["credit", "💳 עלות אשראי"], ["annual", "📅 הוצאות שנתיות"]];
+const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["mortgage", "🏠 משכנתא והלוואה"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"], ["delay", "⏳ עלות ההמתנה"], ["credit", "💳 עלות אשראי"], ["annual", "📅 הוצאות שנתיות"], ["fees", "💸 דמי ניהול"], ["insurance", "🛡️ ביטוחים"]];
 const MV = {};   // תצוגות הכלים
 
 Routes.money = function (tab) {
@@ -343,4 +343,68 @@ MV.annual = function (el) {
   };
   el.querySelectorAll("input, select").forEach(i => i.addEventListener("input", calc));
   calc();
+};
+
+// ---------- השפעת דמי ניהול ----------
+MV.fees = function (el) {
+  const s = mLoad("fees", { start: 50000, pmt: 1000, years: 30, ret: 5, feeA: 0.5, feeB: 1.0, depA: 0, depB: 0 });
+  el.innerHTML = `<div class="grid grid-2">
+    <section class="card" aria-labelledby="mfT"><h2 id="mfT">💸 כמה עולים דמי הניהול לאורך שנים?</h2>
+      ${mField("mfStart", "יתרה התחלתית (₪)", s.start, 'min="0" step="1000"')}
+      ${mField("mfPmt", "הפקדה חודשית (₪)", s.pmt, 'min="0" step="100"')}
+      ${mField("mfYears", "שנים", s.years, 'min="1" max="50" step="1"')}
+      ${mField("mfRet", "תשואה שנתית ברוטו משוערת (%), לפני דמי ניהול", s.ret, 'min="0" max="20" step="0.5"')}
+      <h3>מסלול א (למשל המוצר הנוכחי)</h3>
+      ${mField("mfFeeA", "דמי ניהול שנתיים מהצבירה (%)", s.feeA, 'min="0" max="5" step="0.05"')}
+      ${mField("mfDepA", "דמי ניהול מההפקדה (%)", s.depA, 'min="0" max="10" step="0.1"')}
+      <h3>מסלול ב (הצעה להשוואה)</h3>
+      ${mField("mfFeeB", "דמי ניהול שנתיים מהצבירה (%)", s.feeB, 'min="0" max="5" step="0.05"')}
+      ${mField("mfDepB", "דמי ניהול מההפקדה (%)", s.depB, 'min="0" max="10" step="0.1"')}
+      <p class="small muted">את דמי הניהול האמיתיים שלכם מוצאים בדוח התקופתי או בהסכם. הנתונים כאן לדוגמה בלבד, והם אינם מייצגים מוצר או גוף מסוים.</p></section>
+    <section class="card" aria-labelledby="mfO" aria-live="polite"><h2 id="mfO">התוצאה</h2><div id="mfRes"></div></section></div>`;
+  const run = (v, fee, dep) => {
+    const r = (v.ret - fee) / 100 / 12, n = Math.round(v.years * 12), p = v.pmt * (1 - dep / 100);
+    const g = Math.pow(1 + r, n);
+    return { end: v.start * g + (r ? p * (g - 1) / r : p * n), paid: v.start + v.pmt * n };
+  };
+  const calc = () => {
+    const v = { start: mNum("mfStart"), pmt: mNum("mfPmt"), years: Math.min(50, Math.max(1, Math.round(mNum("mfYears")))), ret: mNum("mfRet"), feeA: mNum("mfFeeA"), feeB: mNum("mfFeeB"), depA: mNum("mfDepA"), depB: mNum("mfDepB") };
+    mSave("fees", v);
+    const A = run(v, v.feeA, v.depA), B = run(v, v.feeB, v.depB), diff = A.end - B.end, nofee = run(v, 0, 0);
+    const pct = x => nofee.end ? fmt((nofee.end - x.end) / nofee.end * 100, 1) : "0";
+    document.getElementById("mfRes").innerHTML = `
+      <div class="table-wrap"><table><caption class="sr-only">השוואת מסלולים</caption><thead><tr><th scope="col">מסלול</th><th scope="col">סכום בסוף</th><th scope="col">נשחק על ידי עלויות</th></tr></thead>
+      <tbody><tr><th scope="row">א (${fmt(v.feeA, 2)}%)</th><td>${fmt(A.end)} ₪</td><td>${pct(A)}%</td></tr>
+      <tr><th scope="row">ב (${fmt(v.feeB, 2)}%)</th><td>${fmt(B.end)} ₪</td><td>${pct(B)}%</td></tr></tbody></table></div>
+      <p>ההפרש בסוף ${v.years} שנים: <b class="${diff === 0 ? "" : "bad"}">${fmt(Math.abs(diff))} ₪</b> ${diff > 0 ? "לטובת מסלול א" : diff < 0 ? "לטובת מסלול ב" : ""}. ההפקדות עצמן זהות: ${fmt(A.paid)} ₪.</p>
+      <p class="small muted">הפרש קטן באחוזים נראה זניח, אבל הוא נצבר כל שנה על כל הצבירה, וממשיך להצטבר בריבית דריבית. "נשחק" משווה לתרחיש דמיוני בלי עלויות בכלל.</p>
+      <p class="small muted">חישוב פשוט: תשואה קבועה, דמי הניהול מופחתים מהתשואה, בלי מס, בלי אינפלציה ובלי הבדלי תשואה בין המסלולים. בפועל גם אחוז נמוך יותר אינו מבטיח תשואה גבוהה יותר, ולמסלולים יש מאפיינים שונים: בדקו תנאים בכתב.</p>`;
+  };
+  ["mfStart", "mfPmt", "mfYears", "mfRet", "mfFeeA", "mfFeeB", "mfDepA", "mfDepB"].forEach(id => document.getElementById(id).addEventListener("input", calc));
+  calc();
+};
+
+// ---------- ביטוחים: מה לבדוק ----------
+const INS_GROUPS = [
+  ["כללי לכל ביטוח", ["אני יודע מה בדיוק מכוסה ומה החריגים בפוליסה.", "אני יודע מה ההשתתפות העצמית או תקופת ההמתנה.", "בדקתי שאין כפל ביטוח על אותו סיכון (למשל דרך עבודה, בנק או כרטיס אשראי).", "אני יודע מי רשום כמוטב בפוליסות שיש בהן מוטב.", "השוויתי הצעות בכתב בשלוש השנים האחרונות."]],
+  ["בריאות ואובדן כושר עבודה", ["אני יודע איזה כיסוי בריאות יש לי מעבר לזה הבסיסי, ומאיפה הוא מגיע.", "אני יודע אם יש לי כיסוי למקרה שאפסיק לעבוד בגלל מחלה או תאונה, ומה גובה הפיצוי החודשי."]],
+  ["משפחה ותלויים", ["אם יש מי שתלוי בהכנסה שלי, בדקתי אם יש כיסוי למקרה פטירה ומה הסכום.", "הסכום מתאים להתחייבויות כמו משכנתא ולימודי ילדים."]],
+  ["רכוש", ["בדקתי שביטוח הדירה מכסה את מה שחשוב (מבנה ותכולה) ובאילו סכומים.", "בדקתי את ביטוח הרכב: סוג הכיסוי, השתתפות עצמית ומה כלול."]]
+];
+const insLoad = () => { try { return JSON.parse(localStorage.getItem("ia-ins")) || {}; } catch (e) { return {}; } };
+MV.insurance = function (el) {
+  const done = insLoad(), all = INS_GROUPS.reduce((a, g) => a + g[1].length, 0);
+  let k = 0;
+  el.innerHTML = `<section class="card" aria-labelledby="miN"><h2 id="miN">🛡️ רשימת בדיקה לביטוחים</h2>
+    <p class="muted">הרשימה אינה ממליצה לקנות או לבטל ביטוח. היא שאלות שכדאי לדעת עליהן תשובה, כדי שתוכלו לדבר עם סוכן או חברה בצורה מושכלת. התשובות נשמרות בדפדפן שלכם בלבד.</p>
+    <p aria-live="polite"><b id="insCount"></b></p></section>
+    ${INS_GROUPS.map(g => `<section class="card mt"><h3>${g[0]}</h3>${g[1].map(t => { const i = k++; return `<label class="opt-row"><input type="checkbox" data-i="${i}" ${done[i] ? "checked" : ""}> <span>${esc(t)}</span></label>`; }).join("")}</section>`).join("")}
+    <p class="small muted mt">מה שלא סימנתם הוא רשימת שאלות לסוכן, לחברה או לבדיקה במסמכים. ייעוץ ביטוחי אישי נותנים יועצים מורשים בלבד.</p>`;
+  const count = () => { document.getElementById("insCount").textContent = `סימנתם ${Object.keys(insLoad()).length} מתוך ${all}`; };
+  el.querySelectorAll("input[type=checkbox]").forEach(c => c.onchange = () => {
+    const d = insLoad(); if (c.checked) d[c.dataset.i] = true; else delete d[c.dataset.i];
+    try { localStorage.setItem("ia-ins", JSON.stringify(d)); } catch (e) { /* ignore */ }
+    count();
+  });
+  count();
 };
