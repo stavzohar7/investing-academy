@@ -86,3 +86,13 @@ Routes.health = function () {
   });
   render(); renderHist();
 };
+
+// הציון האחרון שנשמר בהיסטוריה
+window.healthLast = function () { const h = healthLoad().hist; return h.length ? h[h.length - 1] : null; };
+// תזכורת בדף הבית: חזרה על הבדיקה אחרי 90 יום (מתווספת לתזכורת התנהלות כספית אם יש)
+window.healthReminder = function (el) {
+  if (!el) return;
+  const l = healthLast(); if (!l) return;
+  const days = Math.floor((Date.now() - new Date(l.date).getTime()) / 86400000);
+  if (days >= 90) el.insertAdjacentHTML("beforeend", '<a class="card today-card" href="#health"><div class="small muted">🩺 עברו ' + days + ' ימים מבדיקת הבריאות הפיננסית האחרונה</div><b>זמן לבדיקה חוזרת: 3 דקות, ואפשר לראות מה השתנה</b></a>');
+};

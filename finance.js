@@ -24,6 +24,7 @@ Routes.finance = function () {
     <h1>💸 התנהלות כספית</h1>
     <p class="muted">ממלאים כמה פרטים — המצב המשפחתי, כמה יש עכשיו, כמה מזה מושקע וכמה נכנס ויוצא בחודש — ומקבלים תמונת מצב, סדר עדיפויות והקרנה לעתיד. הכול מחושב אצלכם בדפדפן ונשמר בו בלבד; שום נתון לא נשלח לשום מקום. זו מסגרת חשיבה לפי מה שנלמד באתר — <b>לא ייעוץ פיננסי</b>.</p>
 
+    <div id="finHealth" class="mb"></div>
     <div class="grid grid-2">
       <section class="card" aria-labelledby="fnP"><h2 id="fnP">1. מי אתם</h2>
         <div class="field"><label for="fnStatus">מצב משפחתי</label><select id="fnStatus"><option value="single">רווק/ה</option><option value="couple">נשוי/ה או בזוגיות</option><option value="single_parent">הורה יחיד/ה</option><option value="parents">גר/ה בבית ההורים</option></select></div>
@@ -247,3 +248,6 @@ window.financeReminder = function (el) {
   const last = parse(h[h.length - 1]), days = Math.floor((Date.now() - last) / 86400000);
   if (last && days >= 90) el.innerHTML = '<a class="card today-card" href="#finance"><div class="small muted">⏰ עברו ' + days + ' ימים מתמונת המצב האחרונה</div><b>זמן לבדיקה כספית: עדכנו נתונים ושמרו תמונה חדשה</b></a>';
 };
+
+// ציון הבריאות הפיננסית מוצג בראש העמוד
+(function () { const r = Routes.finance; Routes.finance = function () { r.apply(this, arguments); const el = document.getElementById("finHealth"); if (el && window.healthLast) { const hh = healthLast(); el.innerHTML = hh ? `<a class="card" href="#health" style="display:block;text-decoration:none;color:inherit">🩺 <b>ציון הבריאות הפיננסית האחרון שלכם: ${hh.score}</b> <span class="small muted">(${esc(hh.date.split("-").reverse().join("."))}) · לבדיקה מחדש ←</span></a>` : `<a class="card" href="#health" style="display:block;text-decoration:none;color:inherit">🩺 <b>עדיין לא עשיתם בדיקת בריאות פיננסית</b> <span class="small muted">· 12 שאלות, שלוש דקות ←</span></a>`; } }; })();
