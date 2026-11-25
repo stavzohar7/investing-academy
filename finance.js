@@ -91,7 +91,6 @@ Routes.finance = function () {
     // ----- תמונת מצב -----
     const surplus = v.income - v.expenses, rate = surplus / v.income;
     const netWorth = v.cash + v.invested + v.pension - v.debtHi - v.debtOther;
-    const dependents = v.kids > 0 || v.status === "couple";
     const young = v.status === "parents";
     let target = v.kids > 0 ? 6 : v.status === "couple" ? 4 : 3;
     if (v.work === "self") target = Math.max(target, 6);
@@ -114,8 +113,6 @@ Routes.finance = function () {
       steps.push({ t: efHave < target / 2 ? "bad" : "mid", h: "להשלים כרית ביטחון", p: `לפי הפרופיל (${v.kids > 0 ? "ילדים" : v.status === "couple" ? "זוגיות" : "יחיד/ה"}${v.work === "self" ? ", הכנסה לא קבועה" : ""}) כדאי כרית של כ-${target} חודשי הוצאות: ${fmt(efNeed)} ₪. חסרים ${fmt(need)} ₪${mo ? ` — כ-${mo} חודשים בהפקדה של ${fmt(Math.min(surplus, Math.max(v.monthlyInvest, surplus * .5)))} ₪` : ""}. הכרית נשמרת בפיקדון או בקרן כספית נזילה.`, l: ["מחשבון כרית ומטרות", "#money/goal"] });
     }
     if (rate < .10 && surplus >= 0) steps.push({ t: "mid", h: "להעלות את שיעור החיסכון", p: `שיעור החיסכון הוא ${fmt(rate * 100, 1)}%. כל 500 ₪ נוספים בחודש בתשואה של ${v.ret}% מוסיפים כ-${fmt(finFV(0, 500, v.ret, 20))} ₪ אחרי 20 שנה. בודקים רצוניות, מנויים והוצאות קבועות.`, l: ["מתכנן תקציב", "#money/budget"] });
-    if (dependents) steps.push({ t: "mid", h: v.kids > 0 ? "הגנה על המשפחה: ביטוחים" : "ביטוחים ושיתוף כספי בזוגיות", p: v.kids > 0 ? "יש תלויים — בדקו כיסוי למקרה פטירה ואובדן כושר עבודה של כל מפרנס (לעיתים חלק מהכיסוי כבר קיים בפנסיה), כפילויות ועלות. בדקו גם אם נפתח חיסכון לכל ילד, ושקלו הגדרת יעד לימודים או עצמאות עתידי." : "הסכימו ביחד על יעדים, על חשבון משותף להוצאות, ועל מי עושה מה. בדקו כיסוי ביטוחי הדדי ופנסיה לכל אחד מבני הזוג.", l: ["שיעור כרית, חובות וביטוחים", "#lesson/lf-2"] });
-    else steps.push({ t: "mid", h: "ביטוח אובדן כושר עבודה ובריאות", p: "אתם מפרנסים את עצמכם — הסיכון הגדול הוא אובדן כושר עבודה. בדקו מה כבר מכוסה בפנסיה ובביטוח הבריאות, ומה חסר.", l: ["שיעור כרית, חובות וביטוחים", "#lesson/lf-2"] });
     steps.push({ t: "mid", h: "לבדוק פנסיה ודמי ניהול", p: `בצבירה של ${fmt(v.pension)} ₪, הפרש של אחוז בדמי ניהול הוא עשרות אלפי שקלים לאורך השנים. בדקו דמי ניהול, מסלול (מתאים לגיל ${v.age}?), ריבוי קופות ומסלקה פנסיונית.`, l: ["מטרות, שווי נקי ופנסיה", "#lesson/lf-3"] });
     const canInvest = efHave >= Math.min(target, 3) && !(v.debtHi > 0 && v.debtHiRate >= 8);
     if (canInvest && surplus > 0) {
