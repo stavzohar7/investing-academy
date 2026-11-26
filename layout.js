@@ -21,7 +21,13 @@ function partCard(p) {
 }
 
 function termCard() {
-  const G = window.GLOSSARY, g = G[Math.floor(Date.now() / 86400000) % G.length];
+  let G = window.GLOSSARY;
+  if (State.data.track === "young") {
+    const adv = /אופצי|Theta|Delta|Gamma|Vega|שורט|Short|נר |נרות|RSI|MACD|ATR|ממוצע נע|Moving Average|תמיכה|התנגדות|Fibonacci|פיבונאצ|Stop|סטופ|Trailing|Bollinger|Breakout|פריצה|VCP|Setup|Candle|Gap|גאפ|VWAP|OBV|Piotroski|Altman|Beneish|EV\/EBITDA|WACC|DCF|Beta|בטא|Alpha|אלפא|Sharpe|שארפ/i;
+    const easy = G.filter(x => !adv.test(x[0] + " " + x[1]));
+    if (easy.length > 10) G = easy;
+  }
+  const g = G[Math.floor(Date.now() / 86400000) % G.length];
   return `<section class="card" aria-labelledby="dTerm"><div class="small muted">📖 מושג היום</div>
     <h2 id="dTerm" style="font-size:1.15rem;margin:6px 0 2px;color:var(--gold)">${esc(g[0])} <span class="small muted" lang="en" dir="ltr">${esc(g[1])}</span></h2>
     <p class="small">${esc(g[2])}</p><a class="small" href="#glossary/cards">חזרה בכרטיסיות ←</a></section>`;
@@ -62,19 +68,21 @@ Routes.home = function () {
   <div class="today-row mb">
     <a class="card today-card" href="#practice"><div class="small muted">🧠 אימון יומי</div><h2 style="font-size:1.15rem;margin:6px 0">${due ? `${due} שאלות מחכות` : "חזרה מרווחת"}</h2><p class="small muted">5 דקות ביום ששומרות על מה שלמדת.</p><span class="btn small">לאימון ←</span></a>
     ${termCard()}
-    <div id="weeklyTeaser"></div>
-    <div id="newsTeaser"></div>
+  </div>
+
+  <h2>🧰 כלים להתחלה</h2>
+  <div class="quick-links">
+    ${[["🩺","בדיקת בריאות פיננסית","health"],["🏁","אתגר 30 יום לסדר כלכלי","challenge"],["💸","התנהלות כספית","finance"],["💰","תקציב, חובות ומטרות","money"],["⏳","עלות ההמתנה בחיסכון","money/delay"],["💳","עלות אשראי ותשלומים","money/credit"],["🎓","מסלול 12 חודשים לצעירים","youth"],["🧪","בוחן הסבלנות שלי לסיכון","risk"],["🧱","במה להתמקד בבניית תיק","assets"],["⚖️","השוואת עלויות: קרנות וברוקרים","compare"],["💼","מבחן קיצון לתיק","portfolio"],["🧮","מחשבוני השקעה","tools"],["🧭","כל האתר","sitemap"]]
+      .map(t => `<a href="#${t[2]}"><span aria-hidden="true">${t[0]}</span> ${t[1]}</a>`).join("")}
   </div>
 
   <h2>🗺️ הדרך שלך — ${PARTS.length} חלקים</h2>
   <p class="small muted">הניתוח הפונדמנטלי והניתוח הטכני לומדים בנפרד, ומשלבים ביניהם בחלק האחרון. לחץ על חלק כדי להמשיך מהשיעור הבא בו.</p>
   <div class="parts-grid">${PARTS.map(partCard).join("")}</div>
 
-  <h2 class="mt">כלים מהירים</h2>
-  <div class="quick-links">
-    ${[["🩺","בדיקת בריאות פיננסית","health"],["🏁","אתגר 30 יום לסדר כלכלי","challenge"],["💸","התנהלות כספית","finance"],["💰","תקציב, חובות ומטרות","money"],["⏳","עלות ההמתנה בחיסכון","money/delay"],["💳","עלות אשראי ותשלומים","money/credit"],["🎓","מסלול 12 חודשים לצעירים","youth"],["🧪","בוחן הסבלנות שלי לסיכון","risk"],["🧱","במה להתמקד בבניית תיק","assets"],["⚖️","השוואת עלויות: קרנות וברוקרים","compare"],["💼","מבחן קיצון לתיק","portfolio"],["🧮","מחשבוני השקעה","tools"],["🧭","כל האתר","sitemap"]]
-      .map(t => `<a href="#${t[2]}"><span aria-hidden="true">${t[0]}</span> ${t[1]}</a>`).join("")}
-  </div>
+  <h2 class="mt">📡 מהשוק</h2>
+  <p class="small muted">חומר להעשרה אחרי שהיסודות במקום: ניתוח שבועי וחדשות. אינו המלצה לקנות או למכור.</p>
+  <div class="today-row mb"><div id="weeklyTeaser"></div><div id="newsTeaser"></div></div>
 
   <details class="card mt">
     <summary>⚙️ התאמת מסלול הלימוד${State.data.track !== "all" ? ` · נבחר: ${TRACKS[State.data.track].name}` : ""}</summary>
