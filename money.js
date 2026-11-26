@@ -4,7 +4,7 @@
 // ===================================================================
 TITLES.money = "ניהול כסף";
 
-const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"], ["delay", "⏳ עלות ההמתנה"], ["credit", "💳 עלות אשראי"], ["annual", "📅 הוצאות שנתיות"], ["fees", "💸 דמי ניהול"]];
+const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"], ["delay", "⏳ עלות ההמתנה"], ["credit", "💳 עלות אשראי"], ["annual", "📅 הוצאות שנתיות"], ["fees", "💸 דמי ניהול"], ["horizon", "🧭 אופק וכלי"]];
 const MV = {};   // תצוגות הכלים
 
 Routes.money = function (tab) {
@@ -343,5 +343,39 @@ MV.fees = function (el) {
       <p class="small muted">חישוב פשוט: תשואה קבועה, דמי הניהול מופחתים מהתשואה, בלי מס, בלי אינפלציה ובלי הבדלי תשואה בין המסלולים. בפועל גם אחוז נמוך יותר אינו מבטיח תשואה גבוהה יותר, ולמסלולים יש מאפיינים שונים: בדקו תנאים בכתב.</p>`;
   };
   ["mfStart", "mfPmt", "mfYears", "mfRet", "mfFeeA", "mfFeeB", "mfDepA", "mfDepB"].forEach(id => document.getElementById(id).addEventListener("input", calc));
+  calc();
+};
+
+// ---------- אופק זמן: לכל מטרה כלי אחר ----------
+MV.horizon = function (el) {
+  const s = mLoad("horizon", { a1: 30000, y1: 1, a2: 40000, y2: 3, a3: 150000, y3: 8, a4: 2000000, y4: 40, rS: 2, rM: 4, rL: 6 });
+  const names = ["כרית ביטחון או מטרה קרובה", "מטרה בינונית־קצרה (רכב, חתונה, לימודים)", "מטרה בינונית־ארוכה (הון עצמי לדירה)", "פרישה"];
+  el.innerHTML = `<div class="grid grid-2">
+    <section class="card" aria-labelledby="mhT"><h2 id="mhT">🧭 לכל מטרה אופק, ולכל אופק כלי אחר</h2>
+      <p class="muted">הכלל הלימודי: כסף שצריך בעוד פחות מכ-3 שנים לא שמים במה שיכול לרדת 30% בדיוק לפני השימוש. מטרות רחוקות נותנות לשוק זמן להתאושש. הזינו סכום ושנים לכל מטרה.</p>
+      ${[1, 2, 3, 4].map(i => `<h3>${names[i - 1]}</h3>${mField("mh" + "a" + i, "סכום היעד (₪)", s["a" + i], 'min="0" step="1000"')}${mField("mh" + "y" + i, "בעוד כמה שנים", s["y" + i], 'min="0.5" max="60" step="0.5"')}`).join("")}
+      <h3>הנחות תשואה שנתית (לימודיות, לא תחזית)</h3>
+      ${mField("mhrS", "טווח קצר, עד 3 שנים (%)", s.rS, 'min="0" max="15" step="0.5"')}
+      ${mField("mhrM", "טווח בינוני, 3 עד 10 שנים (%)", s.rM, 'min="0" max="15" step="0.5"')}
+      ${mField("mhrL", "טווח ארוך, מעל 10 שנים (%)", s.rL, 'min="0" max="15" step="0.5"')}</section>
+    <section class="card" aria-labelledby="mhO" aria-live="polite"><h2 id="mhO">התוצאה</h2><div id="mhRes"></div></section></div>`;
+  const calc = () => {
+    const v = {}; ["a1", "y1", "a2", "y2", "a3", "y3", "a4", "y4"].forEach(k => v[k] = mNum("mh" + k)); v.rS = mNum("mhrS"); v.rM = mNum("mhrM"); v.rL = mNum("mhrL");
+    mSave("horizon", v);
+    let total = 0;
+    const rows = [1, 2, 3, 4].map(i => {
+      const a = v["a" + i], y = Math.max(0.5, v["y" + i]), n = Math.max(1, Math.round(y * 12));
+      const kind = y <= 3 ? ["קצר", v.rS, "בדרך כלל כלים יציבים ונזילים, לא מניות"] : y <= 10 ? ["בינוני", v.rM, "שילוב: חלק יציב וחלק שמסכן ירידה זמנית"] : ["ארוך", v.rL, "אפשר לשקול נכסים תנודתיים, עם הבנה שהערך ישתנה בדרך"];
+      const r = kind[1] / 100 / 12, dep = r ? a * r / (Math.pow(1 + r, n) - 1) : a / n;
+      total += dep;
+      return `<tr><th scope="row">${names[i - 1]}</th><td>${fmt(a)} ₪ בעוד ${fmt(y, 1)} שנים</td><td>${kind[0]} (${fmt(kind[1], 1)}%)</td><td><b>${fmt(dep)} ₪</b></td><td class="small">${kind[2]}</td></tr>`;
+    }).join("");
+    document.getElementById("mhRes").innerHTML = `
+      <div class="table-wrap"><table><caption class="sr-only">הפקדה חודשית לכל מטרה</caption><thead><tr><th scope="col">מטרה</th><th scope="col">יעד</th><th scope="col">אופק</th><th scope="col">הפקדה חודשית</th><th scope="col">סוג כלי (לימודי)</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p>סך ההפקדות החודשיות לכל המטרות: <b>${fmt(total)} ₪</b></p>
+      <p class="small muted">אם הסכום גבוה מהיכולת שלכם, מקצרים את הרשימה או מאריכים אופק לפי סדר חשיבות. כרית ביטחון וחוב יקר קודמים לכל השאר. החישוב פשוט: תשואה קבועה ומוזנת על ידכם, בלי מס, אינפלציה ודמי ניהול; בפועל התשואה משתנה ואינה מובטחת. התוכן לימודי ואינו ייעוץ השקעות או מס.</p>`;
+  };
+  ["a1", "y1", "a2", "y2", "a3", "y3", "a4", "y4"].forEach(k => document.getElementById("mh" + k).addEventListener("input", calc));
+  ["mhrS", "mhrM", "mhrL"].forEach(id => document.getElementById(id).addEventListener("input", calc));
   calc();
 };

@@ -5,7 +5,7 @@ const STORE_KEY = "invest-academy-v1";
 const PREFS_KEY = "ia-prefs";
 
 const State = {
-  data: { done: {}, xp: 0, answered: {}, checklist: {}, journal: [], notes: {}, days: [], cards: {}, track: "all" },
+  data: { done: {}, xp: 0, answered: {}, checklist: {}, journal: [], notes: {}, days: [], cards: {}, track: "young" },
   load() {
     try {
       const raw = localStorage.getItem(STORE_KEY);
@@ -23,6 +23,7 @@ const Prefs = {
 // ---------- learning tracks ----------
 const TRACKS = {
   all: { name: "המסלול המלא", icon: "🎓", desc: "כל השלבים — מומלץ להבנה מלאה", skip: [] },
+  young: { name: "צעיר/ה ורווק/ה: יסודות והשקעה לטווח ארוך", icon: "🌱", desc: "כסף בסיסי, ריבית דריבית, קרנות מדד ותיק פשוט — בלי ניתוח טכני וסווינג", skip: ["l4", "la", "ls"] },
   long: { name: "משקיע לטווח ארוך", icon: "🏛️", desc: "דוחות, ערך, סקטורים, מאקרו — בלי ניתוח טכני", skip: ["l4", "la"] },
   swing: { name: "סוחר סווינג", icon: "⚡", desc: "טכני, סווינג מתקדם וניהול סיכונים — עם יסודות פונדמנטליים", skip: ["l3", "ls"] }
 };
