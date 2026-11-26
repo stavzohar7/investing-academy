@@ -9,14 +9,14 @@ TITLES.accessibility = "הצהרת נגישות";
 // ===================== התחל כאן: תוכנית לימוד אישית =====================
 const START_FIRST = {
   none: ["l1-1", "l1-2", "l1-7"],
-  some: { all: ["l1-7", "l2-1", "l3-1"], long: ["l1-7", "l2-1", "l3-1"], swing: ["l1-7", "l4-1", "l5-1"] },
-  pro: { all: ["l3-5", "l5-1", "l7-3"], long: ["l3-3", "l3-5", "l7-3"], swing: ["l4-5", "l5-1", "la-1"] }
+  some: { young: ["l1-7", "l1-6", "l1-8"], all: ["l1-7", "l2-1", "l3-1"], long: ["l1-7", "l2-1", "l3-1"], swing: ["l1-7", "l4-1", "l5-1"] },
+  pro: { young: ["l1-8", "lp-1", "l5-crash"], all: ["l3-5", "l5-1", "l7-3"], long: ["l3-3", "l3-5", "l7-3"], swing: ["l4-5", "l5-1", "la-1"] }
 };
 
 Routes.start = function () {
   const p = State.data.profile || {};
   const radio = (name, opts) => opts.map(([v, l, d]) => `
-    <label class="choice"><input type="radio" name="${name}" value="${v}" ${p[name] === v ? "checked" : ""}/>
+    <label class="choice"><input type="radio" name="${name}" value="${v}" ${(p[name] || (name === "goal" ? "young" : "")) === v ? "checked" : ""}/>
       <span><b>${l}</b>${d ? `<span class="small muted">${d}</span>` : ""}</span></label>`).join("");
   app().innerHTML = `
     <h1>🚀 התחל כאן</h1>
@@ -26,7 +26,7 @@ Routes.start = function () {
         ${radio("exp", [["none", "אין בכלל", "אף פעם לא קניתי מניה או קרן"], ["some", "קצת", "יש לי קרן או כמה מניות, אבל בלי שיטה"], ["pro", "מנוסה", "אני משקיע כבר כמה שנים"]])}
       </fieldset>
       <fieldset class="qset"><legend>2. מה הכי מעניין אותך?</legend>
-        ${radio("goal", [["long", "השקעה לטווח ארוך", "לבנות הון לאורך שנים, בדרך של באפט"], ["swing", "סווינג טריידינג", "מסחר של ימים עד שבועות"], ["all", "הכול", "להבין לעומק את שני העולמות"]])}
+        ${radio("goal", [["young", "לסדר את הכסף ולהשקיע לטווח ארוך", "מומלץ לצעירים ולרווקים: יסודות, חיסכון קבוע וקרנות מדד"], ["long", "השקעה לטווח ארוך וניתוח חברות", "לבנות הון לאורך שנים, כולל קריאת דוחות והערכת שווי"], ["swing", "סווינג טריידינג", "מסחר של ימים עד שבועות"], ["all", "הכול", "להבין לעומק את שני העולמות"]])}
       </fieldset>
       <fieldset class="qset"><legend>3. כמה זמן בשבוע תוכל להקדיש ללמידה?</legend>
         ${radio("time", [["1", "עד שעה"], ["3", "1-3 שעות"], ["5", "יותר מ-3 שעות"]])}
@@ -56,13 +56,13 @@ Routes.start = function () {
         ${prof.debt ? `<div class="disclaimer mt" role="note">💡 סימנת שיש לך חוב בריבית גבוהה. השיעור הראשון בתוכנית שלך מסביר למה, ברוב המקרים, משקיעים נבונים מטפלים בזה <b>לפני</b> שהם קונים מניות.</div>` : ""}
         ${!prof.cushion ? `<div class="disclaimer mt" role="note">💡 לא סימנת כרית ביטחון. בשיעור "סדר העדיפויות הפיננסי" תבין למה היא הבסיס שמאפשר להחזיק מניות גם במשבר.</div>` : ""}
         <h3>שלושת השיעורים הראשונים</h3>
-        <ol>${[...new Set(prof.debt || !prof.cushion ? ["l1-7", ...firsts] : firsts)].slice(0, 3).map(id => `<li><a href="#lesson/${id}">${esc(lessonTitle(id))}</a></li>`).join("")}</ol>
+        <ol>${[...new Set((prof.debt || !prof.cushion ? ["l1-7", ...firsts] : firsts).map(resolveLessonId))].slice(0, 3).map(id => `<li><a href="#lesson/${id}">${esc(lessonTitle(id))}</a></li>`).join("")}</ol>
         <h3>השגרה השבועית שלך</h3>
         <ul>
           <li>📘 <b>${perWeek} שיעורים</b> לפי הסדר במסלול, כולל הבוחן.</li>
           <li>🧠 <b>5 דקות ביום</b> של <a href="#practice">אימון יומי</a> — כדי לזכור את מה שלמדת.</li>
-          <li>📰 <b>פעם בשבוע</b> קריאת <a href="#weekly">הניתוח השבועי</a> — לראות את העקרונות על חברות אמיתיות.</li>
-          ${track !== "long" ? `<li>🎯 <b>3-5 עסקאות</b> ב<a href="#simulator">סימולטור</a>, ותיעוד ב<a href="#journal">יומן המסחר</a>.</li>` : `<li>✅ <b>פעם בחודש</b> ניתוח של חברה אחת עם <a href="#checklist">צ'קליסט באפט</a>, ושמירת התזה ב<a href="#watchlist">רשימת המעקב</a>.</li>`}
+          <li>📰 ${track === "young" ? "<b>להעשרה, כשיש זמן:</b>" : "<b>פעם בשבוע</b>"} קריאת <a href="#weekly">הניתוח השבועי</a> — לראות את העקרונות על חברות אמיתיות. אינו המלצה לקנות או למכור.</li>
+          ${track === "young" ? `<li>🩺 <b>פעם בחודש</b> עדכון <a href="#finance">תמונת המצב הכספית</a> ו<a href="#health">בדיקת בריאות פיננסית</a>, ושימוש ב<a href="#challenge">אתגר 30 הימים</a> לבניית הרגל.</li>` : track !== "long" ? `<li>🎯 <b>3-5 עסקאות</b> ב<a href="#simulator">סימולטור</a>, ותיעוד ב<a href="#journal">יומן המסחר</a>.</li>` : `<li>✅ <b>פעם בחודש</b> ניתוח של חברה אחת עם <a href="#checklist">צ'קליסט באפט</a>, ושמירת התזה ב<a href="#watchlist">רשימת המעקב</a>.</li>`}
           <li>📚 ספר אחד בכל פעם מ<a href="#library">הספרייה</a> — מומלץ להתחיל ב"הפסיכולוגיה של הכסף".</li>
         </ul>
         <div class="row mt"><a class="btn" href="#lesson/${prof.debt || !prof.cushion ? "l1-7" : firsts[0]}">לשיעור הראשון ←</a><a class="btn ghost" href="#home">לדף הבית</a></div>
