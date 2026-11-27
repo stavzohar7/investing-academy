@@ -4,7 +4,7 @@
 // ===================================================================
 TITLES.money = "ניהול כסף";
 
-const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"], ["delay", "⏳ עלות ההמתנה"], ["credit", "💳 עלות אשראי"], ["annual", "📅 הוצאות שנתיות"], ["fees", "💸 דמי ניהול"], ["horizon", "🧭 אופק וכלי"]];
+const MONEY_TABS = [["budget", "🧾 תקציב"], ["debt", "💳 חובות"], ["goal", "🎯 מטרות וכרית"], ["inflation", "📉 אינפלציה"], ["moveout", "🏡 יציאה מהבית"], ["delay", "⏳ עלות ההמתנה"], ["credit", "💳 עלות אשראי"], ["annual", "📅 הוצאות שנתיות"], ["fees", "💸 דמי ניהול"], ["horizon", "🧭 אופק וכלי"], ["hours", "⏱️ מחיר בשעות"]];
 const MV = {};   // תצוגות הכלים
 
 Routes.money = function (tab) {
@@ -377,5 +377,43 @@ MV.horizon = function (el) {
   };
   ["a1", "y1", "a2", "y2", "a3", "y3", "a4", "y4"].forEach(k => document.getElementById("mh" + k).addEventListener("input", calc));
   ["mhrS", "mhrM", "mhrL"].forEach(id => document.getElementById(id).addEventListener("input", calc));
+  calc();
+};
+
+// ---------- מחיר בשעות עבודה ----------
+MV.hours = function (el) {
+  const s = mLoad("hours", { net: 10000, hrs: 42, commute: 5, workCost: 600, price: 3000, freq: "once", ret: 5, years: 30 });
+  el.innerHTML = `<div class="grid grid-2">
+    <section class="card" aria-labelledby="mhrT"><h2 id="mhrT">⏱️ כמה שעות עבודה עולה הקנייה הזאת?</h2>
+      <p class="muted">שכר השעה האמיתי שלכם נמוך משכר השעה ברוטו על הכרטיס: מחשבים גם את זמן הנסיעה ואת ההוצאות שקיימות רק בגלל העבודה.</p>
+      ${mField("mhNet", "הכנסה נטו בחודש (₪)", s.net, 'min="0" step="500"')}
+      ${mField("mhHrs", "שעות עבודה בשבוע", s.hrs, 'min="1" max="100" step="1"')}
+      ${mField("mhCom", "שעות נסיעה לעבודה ובחזרה בשבוע", s.commute, 'min="0" max="40" step="0.5"')}
+      ${mField("mhWc", "הוצאות בגלל העבודה בחודש (נסיעות, אוכל בחוץ, ביגוד) (₪)", s.workCost, 'min="0" step="100"')}
+      <h3>הקנייה</h3>
+      ${mField("mhPrice", "מחיר (₪)", s.price, 'min="0" step="100"')}
+      <div class="field"><label for="mhFreq">סוג ההוצאה</label><select id="mhFreq"><option value="once" ${s.freq === "once" ? "selected" : ""}>קנייה חד-פעמית</option><option value="month" ${s.freq === "month" ? "selected" : ""}>הוצאה חודשית קבועה (מנוי, משלוחים, החזר)</option></select></div>
+      ${mField("mhRet", "תשואה שנתית משוערת אילו הכסף היה מושקע (%)", s.ret, 'min="0" max="15" step="0.5"')}
+      ${mField("mhYrs", "לכמה שנים", s.years, 'min="1" max="50" step="1"')}</section>
+    <section class="card" aria-labelledby="mhrO" aria-live="polite"><h2 id="mhrO">התוצאה</h2><div id="mhRes"></div></section></div>`;
+  const calc = () => {
+    const v = { net: mNum("mhNet"), hrs: mNum("mhHrs"), commute: mNum("mhCom"), workCost: mNum("mhWc"), price: mNum("mhPrice"), freq: document.getElementById("mhFreq").value, ret: mNum("mhRet"), years: Math.min(50, Math.max(1, Math.round(mNum("mhYrs")))) };
+    mSave("hours", v);
+    const out = document.getElementById("mhRes");
+    const monthHrsPaid = v.hrs * 52 / 12, monthHrsAll = (v.hrs + v.commute) * 52 / 12;
+    const nominal = monthHrsPaid ? v.net / monthHrsPaid : 0, real = monthHrsAll ? Math.max(0, v.net - v.workCost) / monthHrsAll : 0;
+    if (!real) { out.innerHTML = '<p class="muted">הזינו הכנסה ושעות כדי לחשב.</p>'; return; }
+    const hrsPer = v.price / real, workDay = hrsPer / 8;
+    const r = v.ret / 100 / 12, n = v.years * 12;
+    const fv = v.freq === "once" ? v.price * Math.pow(1 + v.ret / 100, v.years) : mFV(v.price, r, n);
+    const per = v.freq === "once" ? "" : " בכל חודש";
+    out.innerHTML = `
+      <ul><li>שכר שעה נטו לפי שעות העבודה: <b>${fmt(nominal, 1)} ₪</b></li>
+      <li>שכר שעה אמיתי (כולל נסיעות והוצאות העבודה): <b>${fmt(real, 1)} ₪</b></li></ul>
+      <p>מחיר של ${fmt(v.price)} ₪${per} שווה <b>${fmt(hrsPer, 1)} שעות עבודה</b>${v.freq === "once" ? "" : " בכל חודש"}, כ-${fmt(workDay, 1)} ימי עבודה${v.freq === "once" ? "" : ` בחודש, כלומר כ-${fmt(hrsPer * 12, 0)} שעות בשנה`}.</p>
+      <p>אילו הסכום ${v.freq === "once" ? "היה מושקע פעם אחת" : "היה מופקד בכל חודש"} ל-${v.years} שנים בתשואה קבועה של ${fmt(v.ret, 1)}%, הוא היה מגיע ל-<b>${fmt(fv)} ₪</b>.</p>
+      <p class="small muted">זה כלי לחשיבה, לא איסור: אפשר לבחור לקנות גם דברים יקרים, אם הם שווים לכם את השעות. השאלה היא רק אם בחרתם בכך מראש. החישוב פשוט: בלי מס, בלי אינפלציה ובתשואה קבועה שאינה מובטחת.</p>`;
+  };
+  ["mhNet", "mhHrs", "mhCom", "mhWc", "mhPrice", "mhFreq", "mhRet", "mhYrs"].forEach(id => document.getElementById(id).addEventListener("input", calc));
   calc();
 };
